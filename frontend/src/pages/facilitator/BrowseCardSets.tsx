@@ -158,7 +158,7 @@ export default function BrowseCardSets() {
                       onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
                       onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                     >
-                      Use This Set
+                      Use
                     </button>
                   </div>
                 );

@@ -9,14 +9,16 @@ import yellowImg from '../../images/yellow.png';
 export default function PlayerJoin() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
   const codeFromUrl = searchParams.get('code') || '';
+  const cardSetFromUrl = searchParams.get('cardSet') || '';
 
   const [gameCode, setGameCode] = useState(codeFromUrl);
   const [playerName, setPlayerName] = useState('');
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate(`/player/waiting/${gameCode}`);
+    navigate(`/player/waiting/${gameCode}/${cardSetFromUrl}`);
   };
 
   const canJoin = gameCode.trim().length > 0 && playerName.trim().length > 0;

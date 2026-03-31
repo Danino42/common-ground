@@ -19,7 +19,9 @@ export default function CreateLobby() {
   const [isCreating, setIsCreating] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
 
-  const joinUrl = lobbyCode ? `${FRONTEND_URL}/player/join?code=${lobbyCode}` : '';
+  const joinUrl = lobbyCode
+  ? `${FRONTEND_URL}/player/join?code=${lobbyCode}&cardSet=${selectedCardSet}`
+  : '';
 
   const handleCreateLobby = async () => {
     if (!selectedCardSet) return;
