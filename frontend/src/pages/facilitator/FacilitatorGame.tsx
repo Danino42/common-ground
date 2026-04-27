@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router';
 import { Progress } from '../../components/ui/progress';
 import { mockCardSets, mockPlayers, mockGroupSubmissions } from '../../data/mockData';
-import { ArrowLeft, ArrowRight, RotateCcw, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RotateCcw } from 'lucide-react';
 import AppBackground from '../AppBackground';
 
 export default function FacilitatorGame() {
-  const { lobbyCode } = useParams();
+  const {  } = useParams();
   const [currentPhase, setCurrentPhase] = useState<'phase1' | 'phase2' | 'results'>('phase1');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [showCard, setShowCard] = useState(true);

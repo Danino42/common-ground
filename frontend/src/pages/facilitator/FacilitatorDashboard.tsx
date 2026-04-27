@@ -1,9 +1,6 @@
 import { Link } from 'react-router';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
 import { mockCardSets } from '../../data/mockData';
-import { Plus, Sparkles, Library, Play, User, LogOut, ChevronRight, Zap } from 'lucide-react';
+import { Plus, Sparkles, Library, Play, User, LogOut, ChevronRight } from 'lucide-react';
 import greenImg from '../../images/green.png';
 import redImg from '../../images/red.png';
 import yellowImg from '../../images/yellow.png';

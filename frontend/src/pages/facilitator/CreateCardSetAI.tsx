@@ -31,7 +31,6 @@ export default function CreateCardSetAI() {
   const handleSave = () => navigate('/facilitator/dashboard');
 
   const canGenerate = setName && category && prompt && !isGenerating;
-  const canSave = generatedCards.length > 0;
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '9px 12px', borderRadius: 10,

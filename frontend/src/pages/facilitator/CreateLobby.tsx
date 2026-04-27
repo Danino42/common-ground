@@ -17,7 +17,7 @@ export default function CreateLobby() {
   const [lobbyCode, setLobbyCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [playerCount, setPlayerCount] = useState(0);
+  const [playerCount] = useState(0);
 
   const joinUrl = lobbyCode
   ? `${FRONTEND_URL}/player/join?code=${lobbyCode}&cardSet=${selectedCardSet}`

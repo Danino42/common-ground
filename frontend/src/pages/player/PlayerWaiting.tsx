@@ -7,29 +7,6 @@ import greenImg from '../../images/green.png';
 import redImg from '../../images/red.png';
 import yellowImg from '../../images/yellow.png';
 
-const ALL_CARDS = [
-  // { id: 'c1',  text: "I've pulled an all-nighter studying" },
-  // { id: 'c2',  text: "I've changed my major at least once" },
-  // { id: 'c3',  text: "I've fallen asleep in a lecture" },
-  // { id: 'c4',  text: "I joined a student club or society" },
-  // { id: 'c5',  text: "I can speak more than two languages" },
-  // { id: 'c6',  text: "I've lived abroad for more than a month" },
-  // { id: 'c7',  text: "I love cooking at home" },
-  // { id: 'c8',  text: "I prefer mountains over the beach" },
-  // { id: 'c9',  text: "I've binge-watched a series in one weekend" },
-  // { id: 'c10', text: "I play a musical instrument" }
-  { id: 'c1',  text: "I support a universal basic income" },
-  { id: 'c2',  text: "Climate change should be the #1 political priority" },
-  { id: 'c3',  text: "Borders should be more open to immigration" },
-  { id: 'c4',  text: "Wealthy people should pay significantly more taxes" },
-  { id: 'c5',  text: "Social media does more harm than good to democracy" },
-  { id: 'c6',  text: "The state should provide free university education" },
-  { id: 'c7',  text: "Surveillance cameras in public spaces make us safer" },
-  { id: 'c8',  text: "Nuclear energy is necessary for a green future" },
-  { id: 'c9',  text: "Voting should be mandatory for all citizens" },
-  { id: 'c10', text: "Corporations have too much political influence" }
-];
-
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
