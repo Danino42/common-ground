@@ -12,7 +12,7 @@ const GROUP_COLORS = {
 };
 
 export default function PlayerGroupPhase() {
-  const { lobbyCode } = useParams();
+  const {  } = useParams();
   const [statement, setStatement] = useState('');
   const [submitted, setSubmitted] = useState(false);
 

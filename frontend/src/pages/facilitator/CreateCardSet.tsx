@@ -1,10 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Badge } from '../../components/ui/badge';
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
-import greenImg from '../../images/green.png';
-import redImg from '../../images/red.png';
-import yellowImg from '../../images/yellow.png';
 import AppBackground from '../AppBackground';
 
 
@@ -30,7 +26,7 @@ export default function CreateCardSet() {
 
   const canSave = setName && category && cards.some(c => c.trim());
 
-  const inputStyle = {
+  const inputStyle: React.CSSProperties = {
     width: '100%', padding: '9px 12px', borderRadius: 10,
     border: '1.5px solid #e5e7eb', fontSize: '0.875rem',
     outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
