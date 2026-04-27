@@ -6,9 +6,8 @@ import { ArrowLeft, Copy, Play, Users, Check } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import AppBackground from '../AppBackground';
 
-const LOCAL_IP = '172.20.10.3';
-const API_URL = `http://${LOCAL_IP}:8000`;
-const FRONTEND_URL = `http://${LOCAL_IP}:5173`;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || 'http://localhost:5173';
 
 export default function CreateLobby() {
   const navigate = useNavigate();
