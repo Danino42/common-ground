@@ -1,17 +1,6 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import Optional
 
-# Auth
-class FacilitatorRegister(BaseModel):
-    name: str
-    email: str
-    password: str
-
-class FacilitatorLogin(BaseModel):
-    email: str
-    password: str
-
-# Card Sets
 class Card(BaseModel):
     id: str
     text: str
@@ -22,7 +11,15 @@ class CardSetCreate(BaseModel):
     cards: list[Card]
     is_public: bool = False
 
-# Games
+class UserRegister(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
 class GameCreate(BaseModel):
     card_set_id: str
     max_players: int = 30
@@ -30,3 +27,14 @@ class GameCreate(BaseModel):
 class PlayerJoin(BaseModel):
     lobby_code: str
     name: str
+
+class CardAnswer(BaseModel):
+    player_id: str
+    lobby_code: str
+    card_id: str
+    answer: bool  # True = YES, False = NO
+
+class PlayerAnswers(BaseModel):
+    player_id: str
+    lobby_code: str
+    answers: dict  # {card_id: True/False/None}

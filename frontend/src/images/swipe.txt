@@ -1,0 +1,71 @@
+<svg width="100%" viewBox="0 0 160 190.13" role="img" style="max-width: 160px; display: block; margin-inline: auto;"><title>Swipe mode</title><desc>A cheerful vibrant phone with cards flying left and right showing swipe interactions</desc>
+
+  <!-- Background confetti dots -->
+  <circle cx="18" cy="30" r="4" fill="#4ade80" opacity="0.5"></circle>
+  <circle cx="142" cy="25" r="3" fill="#f87171" opacity="0.5"></circle>
+  <circle cx="130" cy="70" r="5" fill="#fbbf24" opacity="0.4"></circle>
+  <circle cx="22" cy="80" r="4" fill="#818cf8" opacity="0.4"></circle>
+  <circle cx="148" cy="110" r="3" fill="#34d399" opacity="0.5"></circle>
+  <circle cx="14" cy="120" r="5" fill="#fb923c" opacity="0.4"></circle>
+  <circle cx="135" cy="150" r="4" fill="#a78bfa" opacity="0.4"></circle>
+  <circle cx="28" cy="158" r="3" fill="#f472b6" opacity="0.5"></circle>
+
+  <!-- YEAH card flying right -->
+  <g class="card-fly" style="transform-origin:100px 55px">
+    <rect x="98" y="28" width="46" height="34" rx="8" fill="#dcfce7" stroke="#4ade80" stroke-width="2"></rect>
+    <rect x="104" y="36" width="28" height="3" rx="1.5" fill="#86efac"></rect>
+    <rect x="104" y="42" width="20" height="3" rx="1.5" fill="#bbf7d0"></rect>
+    <rect x="104" y="48" width="24" height="3" rx="1.5" fill="#bbf7d0"></rect>
+    <text x="121" y="56" text-anchor="middle" font-size="8" font-weight="700" fill="#16a34a">YEAH!</text>
+  </g>
+
+  <!-- Speed lines right -->
+  <line x1="88" y1="40" x2="100" y2="35" stroke="#4ade80" stroke-width="2" stroke-linecap="round" opacity="0.8"></line>
+  <line x1="86" y1="50" x2="100" y2="48" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" opacity="0.6"></line>
+  <line x1="88" y1="60" x2="99" y2="62" stroke="#4ade80" stroke-width="1" stroke-linecap="round" opacity="0.4"></line>
+
+  <!-- NOPE card flying left (static ghost) -->
+  <rect x="16" y="32" width="40" height="30" rx="7" fill="#fee2e2" stroke="#f87171" stroke-width="1.5" stroke-dasharray="4 2" class="nope-pulse"></rect>
+  <rect x="22" y="39" width="24" height="3" rx="1.5" fill="#fca5a5"></rect>
+  <rect x="22" y="45" width="16" height="3" rx="1.5" fill="#fecaca"></rect>
+  <text x="36" y="55" text-anchor="middle" font-size="8" font-weight="700" fill="#ef4444">NOPE</text>
+
+  <!-- Speed lines left -->
+  <line x1="72" y1="42" x2="60" y2="37" stroke="#f87171" stroke-width="2" stroke-linecap="round" opacity="0.7"></line>
+  <line x1="74" y1="52" x2="60" y2="50" stroke="#f87171" stroke-width="1.5" stroke-linecap="round" opacity="0.5"></line>
+
+  <!-- Phone body — rounded, chunky, cheerful -->
+  <g class="phone-wobble">
+    <!-- Phone shadow/glow -->
+    <rect x="51" y="62" width="58" height="104" rx="16" fill="#4ade80" opacity="0.15"></rect>
+    <!-- Phone body -->
+    <rect x="49" y="58" width="62" height="108" rx="16" fill="#1c1917"></rect>
+    <!-- Colorful phone case stripe -->
+    <rect x="49" y="58" width="62" height="108" rx="16" fill="none" stroke="#4ade80" stroke-width="3"></rect>
+    <!-- Screen -->
+    <rect x="54" y="65" width="52" height="92" rx="12" fill="#f0fdf4"></rect>
+    <!-- Notch -->
+    <rect x="72" y="65" width="16" height="5" rx="2.5" fill="#1c1917"></rect>
+    <!-- Current card on screen -->
+    <rect x="58" y="74" width="44" height="62" rx="10" fill="white" stroke="#bbf7d0" stroke-width="1.5"></rect>
+    <!-- Card content lines -->
+    <rect x="64" y="85" width="32" height="4" rx="2" fill="#d1fae5"></rect>
+    <rect x="64" y="93" width="24" height="4" rx="2" fill="#e2e8f0"></rect>
+    <rect x="64" y="101" width="28" height="4" rx="2" fill="#e2e8f0"></rect>
+    <rect x="64" y="109" width="20" height="4" rx="2" fill="#e2e8f0"></rect>
+    <!-- Swipe hint arrow on screen -->
+    <path d="M68 122 Q80 118 92 122" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round"></path>
+    <polygon points="92,119 96,122 92,125" fill="#4ade80"></polygon>
+    <!-- Home bar -->
+    <rect x="72" y="151" width="16" height="3" rx="1.5" fill="#374151"></rect>
+    <!-- Side button -->
+    <rect x="111" y="82" width="4" height="18" rx="2" fill="#374151"></rect>
+    <!-- Volume buttons -->
+    <rect x="45" y="80" width="4" height="10" rx="2" fill="#374151"></rect>
+    <rect x="45" y="94" width="4" height="10" rx="2" fill="#374151"></rect>
+  </g>
+
+  <!-- Left/right indicator labels at bottom -->
+  <text x="36" y="178" text-anchor="middle" font-size="9" font-weight="500" fill="#ef4444">← nope</text>
+  <text x="124" y="178" text-anchor="middle" font-size="9" font-weight="500" fill="#16a34a">yeah →</text>
+</svg>

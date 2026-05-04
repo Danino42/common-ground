@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { useDrag } from '@use-gesture/react';
 import { mockCardSets } from '../../data/mockData';
@@ -6,6 +6,7 @@ import AppBackground from '../AppBackground';
 import greenImg from '../../images/green.png';
 import redImg from '../../images/red.png';
 import yellowImg from '../../images/yellow.png';
+import { API_URL } from '../../utils/api';
 
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -17,7 +18,8 @@ function shuffleArray<T>(arr: T[]): T[] {
 }
 
 export default function PlayerWaiting() {
-  const { gameCode, cardSetId } = useParams();
+  const { gameCode, playerId, cardSetId } = useParams();
+
   const cards = useMemo(() => {
     const set = mockCardSets.find(s => s.id === cardSetId) ?? mockCardSets[0];
     return shuffleArray(set.cards);
@@ -36,11 +38,36 @@ export default function PlayerWaiting() {
   const done = currentIndex >= cards.length;
   const currentCard = cards[currentIndex];
 
-  const handleSwipe = (direction: 'left' | 'right') => {
+  // Mark player as finished when all cards swiped
+  useEffect(() => {
+    if (done && playerId && gameCode) {
+      fetch(`${API_URL}/games/${gameCode}/player/${encodeURIComponent(playerId)}/finished`, {
+        method: 'PATCH',
+      }).catch(() => {});
+    }
+  }, [done]);
+
+  const handleSwipe = async (direction: 'left' | 'right') => {
     if (isAnimatingOut) return;
     setIsAnimatingOut(true);
     setExitDirection(direction);
-    setAnswers(prev => ({ ...prev, [currentCard.id]: direction === 'right' }));
+    const answer = direction === 'right';
+    setAnswers(prev => ({ ...prev, [currentCard.id]: answer }));
+
+    // Send answer to backend immediately
+    if (playerId && gameCode) {
+      fetch(`${API_URL}/games/answer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          player_id: playerId,
+          lobby_code: gameCode,
+          card_id: currentCard.id,
+          answer,
+        }),
+      }).catch(() => {});
+    }
+
     setTimeout(() => {
       setCurrentIndex(i => i + 1);
       setExitDirection(null);

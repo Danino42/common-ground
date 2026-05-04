@@ -4,12 +4,15 @@ import { Progress } from '../../components/ui/progress';
 import { mockCardSets, mockPlayers, mockGroupSubmissions } from '../../data/mockData';
 import { ArrowLeft, ArrowRight, RotateCcw } from 'lucide-react';
 import AppBackground from '../AppBackground';
+import { API_URL } from '../../utils/api';
 
 export default function FacilitatorGame() {
-  const {  } = useParams();
+  const { lobbyCode } = useParams();
   const [currentPhase, setCurrentPhase] = useState<'phase1' | 'phase2' | 'results'>('phase1');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [showCard, setShowCard] = useState(true);
+  const [currentResultIndex, setCurrentResultIndex] = useState(0);
+  const [results, setResults] = useState<Record<string, { yes: number; no: number }>>({});
 
   useEffect(() => {
     document.body.style.minHeight = '100svh';
@@ -30,6 +33,21 @@ export default function FacilitatorGame() {
       }
     };
   }, []);
+
+  // Poll results every 3 seconds
+  useEffect(() => {
+    if (!lobbyCode) return;
+    const fetchResults = async () => {
+      try {
+        const res = await fetch(`${API_URL}/games/${lobbyCode}/results`);
+        const data = await res.json();
+        setResults(data.results || {});
+      } catch {}
+    };
+    fetchResults();
+    const interval = setInterval(fetchResults, 3000);
+    return () => clearInterval(interval);
+  }, [lobbyCode]);
 
   const selectedSet = mockCardSets[0];
   const totalCards = selectedSet.cards.length;
@@ -68,13 +86,119 @@ export default function FacilitatorGame() {
     transition: 'background 0.15s',
   };
 
+  // Results card view
+  const ResultsView = () => {
+    const card = selectedSet.cards[currentResultIndex];
+    const cardResults = results[card.id] || { yes: 0, no: 0 };
+    const total = cardResults.yes + cardResults.no;
+    const yesPercent = total > 0 ? Math.round((cardResults.yes / total) * 100) : 0;
+    const noPercent = total > 0 ? Math.round((cardResults.no / total) * 100) : 0;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+        {/* Header bar */}
+        <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', borderRadius: 14, padding: '1rem 1.5rem', border: '1px solid rgba(255,255,255,0.25)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: 'white', fontWeight: 700, fontSize: '0.9rem' }}>Live Results · Swipe Mode</span>
+          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
+            Card {currentResultIndex + 1} of {totalCards}
+          </span>
+        </div>
+
+        {/* Card + chart */}
+        <div style={{
+          background: 'rgba(255,255,255,0.97)', borderRadius: 24,
+          padding: '3rem', textAlign: 'center',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.2)',
+        }}>
+          <p style={{ fontSize: '2rem', fontWeight: 900, color: '#1c1917', margin: '0 0 2.5rem', letterSpacing: '-0.5px', lineHeight: 1.3 }}>
+            {card.text}
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+
+            {/* YES bar */}
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', fontWeight: 700, color: '#15803d' }}>YEAH</p>
+              <div style={{ height: 140, background: '#f0fdf4', borderRadius: 14, position: 'relative', overflow: 'hidden', border: '1.5px solid #bbf7d0' }}>
+                <div style={{
+                  position: 'absolute', bottom: 0, left: 0, right: 0,
+                  height: `${yesPercent}%`,
+                  background: 'linear-gradient(180deg, #4ade80, #15803d)',
+                  borderRadius: '12px 12px 0 0',
+                  transition: 'height 0.6s ease',
+                }} />
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 900, color: '#15803d' }}>{cardResults.yes}</span>
+                </div>
+              </div>
+              <p style={{ margin: '0.5rem 0 0', fontSize: '1.3rem', fontWeight: 900, color: '#15803d' }}>{yesPercent}%</p>
+            </div>
+
+            {/* NO bar */}
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', fontWeight: 700, color: '#ef4444' }}>NOPE</p>
+              <div style={{ height: 140, background: '#fff5f5', borderRadius: 14, position: 'relative', overflow: 'hidden', border: '1.5px solid #fca5a5' }}>
+                <div style={{
+                  position: 'absolute', bottom: 0, left: 0, right: 0,
+                  height: `${noPercent}%`,
+                  background: 'linear-gradient(180deg, #f87171, #ef4444)',
+                  borderRadius: '12px 12px 0 0',
+                  transition: 'height 0.6s ease',
+                }} />
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ef4444' }}>{cardResults.no}</span>
+                </div>
+              </div>
+              <p style={{ margin: '0.5rem 0 0', fontSize: '1.3rem', fontWeight: 900, color: '#ef4444' }}>{noPercent}%</p>
+            </div>
+          </div>
+
+          <p style={{ margin: 0, fontSize: '0.82rem', color: '#9ca3af' }}>
+            {total} {total === 1 ? 'response' : 'responses'} · updates every 3s
+          </p>
+        </div>
+
+        {/* Prev / Next */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+          <button
+            onClick={() => setCurrentResultIndex(i => Math.max(0, i - 1))}
+            disabled={currentResultIndex === 0}
+            style={{ ...ghostBtn, opacity: currentResultIndex === 0 ? 0.4 : 1 }}
+          >
+            <ArrowLeft size={18} /> Previous
+          </button>
+          <button
+            onClick={() => setCurrentResultIndex(i => Math.min(totalCards - 1, i + 1))}
+            disabled={currentResultIndex === totalCards - 1}
+            style={{ ...ghostBtn, background: 'white', color: '#166534', border: 'none', fontWeight: 800, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', opacity: currentResultIndex === totalCards - 1 ? 0.4 : 1 }}
+          >
+            Next <ArrowRight size={18} />
+          </button>
+        </div>
+
+        {/* End game */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+          <Link to="/facilitator/dashboard" style={{ textDecoration: 'none' }}>
+            <button style={ghostBtn}>End Game</button>
+          </Link>
+          <button
+            onClick={() => { setCurrentPhase('phase1'); setCurrentCardIndex(0); setShowCard(true); setCurrentResultIndex(0); }}
+            style={{ ...ghostBtn, background: '#4ade80', color: '#052e16', border: 'none', fontWeight: 800 }}
+          >
+            <RotateCcw size={16} /> New Round
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen" style={{
       position: 'relative',
       fontFamily: "'Georgia', serif",
       background: 'white',
     }}>
-
       <AppBackground />
 
       {/* Green overlay */}
@@ -84,6 +208,47 @@ export default function FacilitatorGame() {
         zIndex: 1,
         pointerEvents: 'none',
       }} />
+
+      {/* Header */}
+      <header style={{
+        position: 'sticky', top: 0, zIndex: 50,
+        background: 'rgba(255,255,255,0.12)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(255,255,255,0.2)',
+        boxShadow: '0 2px 16px rgba(0,0,0,0.08)',
+      }}>
+        <div className="max-w-7xl mx-auto px-6 py-4" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <Link to="/facilitator/dashboard" style={{ color: 'rgba(255,255,255,0.8)', display: 'flex', textDecoration: 'none' }}>
+              <ArrowLeft size={20} />
+            </Link>
+            <div>
+              <p style={{ margin: 0, fontWeight: 700, color: 'white', fontSize: '0.95rem' }}>Common Ground</p>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)' }}>Code: {lobbyCode}</p>
+            </div>
+          </div>
+
+          {/* Phase switcher */}
+          <div style={{ display: 'flex', gap: 6 }}>
+            {(['phase1', 'phase2', 'results'] as const).map((phase) => (
+              <button
+                key={phase}
+                onClick={() => setCurrentPhase(phase)}
+                style={{
+                  padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer',
+                  background: currentPhase === phase ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.15)',
+                  color: currentPhase === phase ? '#166534' : 'rgba(255,255,255,0.8)',
+                  fontSize: '0.78rem', fontWeight: 700,
+                  backdropFilter: 'blur(8px)',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {phase === 'phase1' ? 'Circle' : phase === 'phase2' ? 'Groups' : 'Results'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8" style={{ position: 'relative', zIndex: 2 }}>
 
@@ -188,55 +353,15 @@ export default function FacilitatorGame() {
 
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <button onClick={() => setCurrentPhase('results')} style={{ ...ghostBtn, background: '#4ade80', color: '#052e16', border: 'none', fontWeight: 800 }}>
-                View Submissions <ArrowRight size={18} />
+                View Results <ArrowRight size={18} />
               </button>
             </div>
           </div>
         )}
 
         {/* RESULTS */}
-        {currentPhase === 'results' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 16, padding: '2rem', textAlign: 'center' }}>
-              <span style={{ display: 'inline-block', marginBottom: 12, background: '#4ade80', color: '#052e16', fontSize: '0.8rem', fontWeight: 800, padding: '5px 14px', borderRadius: 20 }}>
-                Group Submissions
-              </span>
-              <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 900, color: 'white', letterSpacing: '-0.5px' }}>What We Have in Common</h2>
-            </div>
+        {currentPhase === 'results' && <ResultsView />}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {mockGroupSubmissions.map(sub => (
-                <div key={sub.groupId} style={{ background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(8px)', borderRadius: 16, padding: '1.75rem', border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: '50%', background: groupDotColors[sub.groupColor] || '#9ca3af', flexShrink: 0 }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                        <p style={{ margin: 0, fontWeight: 800, fontSize: '1.05rem', color: '#1c1917' }}>Group {sub.groupId}</p>
-                        <span style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', color: '#15803d', fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>{sub.groupColor}</span>
-                      </div>
-                      <p style={{ margin: '0 0 1rem', fontSize: '1.3rem', color: '#1c1917', fontStyle: 'italic', lineHeight: 1.4 }}>"{sub.statement}"</p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {sub.members.map(m => (
-                          <span key={m} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', color: '#374151', fontSize: '0.75rem', fontWeight: 600, padding: '3px 10px', borderRadius: 20 }}>{m}</span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
-              <Link to="/facilitator/dashboard" style={{ textDecoration: 'none' }}>
-                <button style={ghostBtn}>End Game</button>
-              </Link>
-              <button onClick={() => { setCurrentPhase('phase1'); setCurrentCardIndex(0); setShowCard(true); }}
-                style={{ ...ghostBtn, background: '#4ade80', color: '#052e16', border: 'none', fontWeight: 800 }}>
-                <RotateCcw size={16} /> Start New Round
-              </button>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );

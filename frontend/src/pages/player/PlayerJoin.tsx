@@ -5,20 +5,32 @@ import AppBackground from '../AppBackground';
 import greenImg from '../../images/green.png';
 import redImg from '../../images/red.png';
 import yellowImg from '../../images/yellow.png';
+import { API_URL } from '../../utils/api';
 
 export default function PlayerJoin() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const codeFromUrl = searchParams.get('code') || '';
-  const cardSetFromUrl = searchParams.get('cardSet') || '';
 
   const [gameCode, setGameCode] = useState(codeFromUrl);
   const [playerName, setPlayerName] = useState('');
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate(`/player/waiting/${gameCode}/${cardSetFromUrl}`);
+    try {
+      const res = await fetch(`${API_URL}/games/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lobby_code: gameCode, name: playerName }),
+      });
+      const data = await res.json();
+      // data.player_id = "SYZZXL-met"
+      navigate(`/player/waiting/${gameCode}/${data.player_id}`);
+    } catch {
+      const fallbackId = `${gameCode}-${playerName}`;
+      navigate(`/player/waiting/${gameCode}/${fallbackId}`);
+    }
   };
 
   const canJoin = gameCode.trim().length > 0 && playerName.trim().length > 0;

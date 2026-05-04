@@ -27,6 +27,7 @@ export default function App() {
       <Route path="/player/join" element={<PlayerJoin />} />
       <Route path="/player/waiting/:gameCode/:cardSetId?" element={<PlayerWaiting />} />
       <Route path="/player/group-phase" element={<PlayerGroupPhase />} />
+      <Route path="/player/waiting/:gameCode/:playerId" element={<PlayerWaiting />} />
     </Routes>
   )
 }

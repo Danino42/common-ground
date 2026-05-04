@@ -1,0 +1,84 @@
+<svg width="100%" viewBox="0 0 160 185" role="img"><title>Random groups</title><desc>Four cheerful diverse people standing together ready to be grouped</desc>
+
+  <!-- Confetti background -->
+  <circle cx="12" cy="20" r="4" fill="#fbbf24" opacity="0.5"></circle>
+  <circle cx="148" cy="18" r="3" fill="#4ade80" opacity="0.5"></circle>
+  <circle cx="140" cy="80" r="4" fill="#f472b6" opacity="0.4"></circle>
+  <circle cx="16" cy="90" r="3" fill="#818cf8" opacity="0.4"></circle>
+  <circle cx="80" cy="8" r="5" fill="#fb923c" opacity="0.4"></circle>
+
+  <!-- Shuffle sparkle in center top -->
+  <text x="80" y="18" text-anchor="middle" font-size="14" fill="#4ade80">✦</text>
+  <text x="58" y="24" text-anchor="middle" font-size="9" fill="#fbbf24">✦</text>
+  <text x="102" y="24" text-anchor="middle" font-size="9" fill="#f472b6">✦</text>
+
+  <!-- Person 1 — left, arms up celebrating, purple hair -->
+  <g transform="translate(8,28)">
+    <rect x="7" y="35" width="22" height="22" rx="6" fill="#ef4444"></rect>
+    <path d="M7 40 Q0 32 1 24" fill="none" stroke="#ef4444" stroke-width="4" stroke-linecap="round"></path>
+    <path d="M29 40 Q36 32 35 24" fill="none" stroke="#ef4444" stroke-width="4" stroke-linecap="round"></path>
+    <circle cx="1" cy="23" r="4" fill="#FBBF24" stroke="#D97706" stroke-width="1"></circle>
+    <circle cx="35" cy="23" r="4" fill="#FBBF24" stroke="#D97706" stroke-width="1"></circle>
+    <rect x="9" y="56" width="7" height="16" rx="3.5" fill="#1e40af"></rect>
+    <rect x="20" y="56" width="7" height="16" rx="3.5" fill="#1e40af"></rect>
+    <circle cx="18" cy="23" r="13" fill="#FBBF24" stroke="#D97706" stroke-width="1"></circle>
+    <circle cx="9" cy="14" r="6" fill="#7c3aed"></circle>
+    <circle cx="18" cy="10" r="6" fill="#7c3aed"></circle>
+    <circle cx="27" cy="14" r="6" fill="#7c3aed"></circle>
+    <circle cx="13" cy="11" r="5" fill="#7c3aed"></circle>
+    <circle cx="23" cy="11" r="5" fill="#7c3aed"></circle>
+    <circle cx="13" cy="21" r="2" fill="#1c1917"></circle>
+    <circle cx="23" cy="21" r="2" fill="#1c1917"></circle>
+    <path d="M13 27 Q18 31 23 27" fill="none" stroke="#92400e" stroke-width="1.5" stroke-linecap="round"></path>
+  </g>
+
+  <!-- Person 2 — center-left, waving, red bob -->
+  <g transform="translate(46,38)">
+    <rect x="7" y="35" width="22" height="22" rx="6" fill="#eab308"></rect>
+    <path d="M29 40 Q38 34 40 26" fill="none" stroke="#eab308" stroke-width="4" stroke-linecap="round"></path>
+    <circle cx="40" cy="24" r="4" fill="#FBBF24" stroke="#D97706" stroke-width="1"></circle>
+    <path d="M7 44 Q1 48 2 54" fill="none" stroke="#eab308" stroke-width="4" stroke-linecap="round"></path>
+    <rect x="9" y="56" width="7" height="16" rx="3.5" fill="#a16207"></rect>
+    <rect x="20" y="56" width="7" height="16" rx="3.5" fill="#a16207"></rect>
+    <circle cx="18" cy="23" r="13" fill="#fcd34d" stroke="#D97706" stroke-width="1"></circle>
+    <path d="M5 22 Q5 10 18 9 Q31 10 31 22 Q31 15 18 14 Q5 15 5 22Z" fill="#dc2626"></path>
+    <circle cx="13" cy="21" r="2" fill="#1c1917"></circle>
+    <circle cx="23" cy="21" r="2" fill="#1c1917"></circle>
+    <path d="M13 27 Q18 31 23 27" fill="none" stroke="#92400e" stroke-width="1.5" stroke-linecap="round"></path>
+  </g>
+
+  <!-- Person 3 — center-right, green spiky hair -->
+  <g transform="translate(90,32)">
+    <rect x="7" y="35" width="22" height="22" rx="6" fill="#3b82f6"></rect>
+    <path d="M7 40 Q0 36 0 28" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round"></path>
+    <circle cx="0" cy="27" r="4" fill="#FBBF24" stroke="#D97706" stroke-width="1"></circle>
+    <path d="M29 44 Q36 48 35 55" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round"></path>
+    <rect x="9" y="56" width="7" height="16" rx="3.5" fill="#1e40af"></rect>
+    <rect x="20" y="56" width="7" height="16" rx="3.5" fill="#1e40af"></rect>
+    <circle cx="18" cy="23" r="13" fill="#FBBF24" stroke="#D97706" stroke-width="1"></circle>
+    <polygon points="18,7 14,16 18,13 22,16" fill="#166534"></polygon>
+    <polygon points="11,10 9,19 13,15 14,19" fill="#166534"></polygon>
+    <polygon points="25,10 23,19 27,15 26,19" fill="#166534"></polygon>
+    <circle cx="13" cy="21" r="2" fill="#1c1917"></circle>
+    <circle cx="23" cy="21" r="2" fill="#1c1917"></circle>
+    <path d="M13 27 Q18 31 23 27" fill="none" stroke="#92400e" stroke-width="1.5" stroke-linecap="round"></path>
+  </g>
+
+  <!-- Person 4 — right, teal shirt, dark hair -->
+  <g transform="translate(126,42)">
+    <rect x="7" y="35" width="22" height="22" rx="6" fill="#14b8a6"></rect>
+    <path d="M7 38 Q0 32 2 24" fill="none" stroke="#14b8a6" stroke-width="4" stroke-linecap="round"></path>
+    <circle cx="2" cy="23" r="4" fill="#FBBF24" stroke="#D97706" stroke-width="1"></circle>
+    <path d="M29 42 Q35 46 34 53" fill="none" stroke="#14b8a6" stroke-width="4" stroke-linecap="round"></path>
+    <rect x="9" y="56" width="7" height="16" rx="3.5" fill="#0f766e"></rect>
+    <rect x="20" y="56" width="7" height="16" rx="3.5" fill="#0f766e"></rect>
+    <circle cx="18" cy="23" r="13" fill="#FBBF24" stroke="#D97706" stroke-width="1"></circle>
+    <path d="M5 18 Q5 8 18 7 Q31 8 31 18 Q31 12 18 11 Q5 12 5 18Z" fill="#1e3a8a"></path>
+    <circle cx="13" cy="21" r="2" fill="#1c1917"></circle>
+    <circle cx="23" cy="21" r="2" fill="#1c1917"></circle>
+    <path d="M13 27 Q18 31 23 27" fill="none" stroke="#92400e" stroke-width="1.5" stroke-linecap="round"></path>
+  </g>
+
+  <!-- Ground shadow -->
+  <ellipse cx="80" cy="172" rx="62" ry="7" fill="#f0fdf4" opacity="0.8"></ellipse>
+</svg>

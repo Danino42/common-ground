@@ -1,0 +1,37 @@
+<svg width="100%" viewBox="0 0 200 160" role="img"><title>Topic by topic illustration</title><desc>A presenter screen showing a bar chart with live vote results updating in real time</desc>
+      <!-- Screen/monitor -->
+      <rect x="20" y="14" width="160" height="110" rx="10" fill="var(--color-background-primary)" stroke="var(--color-border-secondary)" stroke-width="1.5"></rect>
+      <!-- Screen content -->
+      <rect x="28" y="22" width="144" height="94" rx="6" fill="#f0fdf4"></rect>
+      <!-- Question text lines -->
+      <rect x="36" y="30" width="80" height="5" rx="2" fill="#6ee7b7"></rect>
+      <rect x="36" y="39" width="60" height="4" rx="2" fill="#a7f3d0"></rect>
+      <!-- Bar chart -->
+      <!-- Bar 1 - tall (yes) green -->
+      <rect x="46" y="58" width="20" height="46" rx="3" fill="#15803d"></rect>
+      <text x="56" y="55" text-anchor="middle" font-size="8" font-weight="500" fill="#15803d">72%</text>
+      <!-- Bar 2 - medium -->
+      <rect x="76" y="78" width="20" height="26" rx="3" fill="#4ade80"></rect>
+      <text x="86" y="75" text-anchor="middle" font-size="8" font-weight="500" fill="#15803d">41%</text>
+      <!-- Bar 3 - short -->
+      <rect x="106" y="90" width="20" height="14" rx="3" fill="#86efac"></rect>
+      <text x="116" y="87" text-anchor="middle" font-size="8" font-weight="500" fill="#15803d">18%</text>
+      <!-- Bar 4 - medium tall -->
+      <rect x="136" y="68" width="20" height="36" rx="3" fill="#34d399"></rect>
+      <text x="146" y="65" text-anchor="middle" font-size="8" font-weight="500" fill="#15803d">55%</text>
+      <!-- Baseline -->
+      <line x1="38" y1="104" x2="162" y2="104" stroke="var(--color-border-secondary)" stroke-width="1"></line>
+      <!-- Live dot indicator -->
+      <circle cx="152" cy="30" r="4" fill="#ef4444"></circle>
+      <text x="145" y="33" text-anchor="end" font-size="7" fill="#ef4444">LIVE</text>
+      <!-- Monitor stand -->
+      <rect x="88" y="124" width="24" height="6" rx="2" fill="var(--color-border-secondary)"></rect>
+      <rect x="76" y="130" width="48" height="5" rx="2" fill="var(--color-border-secondary)"></rect>
+      <!-- Small phones below (audience) -->
+      <rect x="30" y="146" width="14" height="10" rx="2" fill="var(--color-background-secondary)" stroke="var(--color-border-secondary)" stroke-width="1"></rect>
+      <rect x="50" y="146" width="14" height="10" rx="2" fill="var(--color-background-secondary)" stroke="var(--color-border-secondary)" stroke-width="1"></rect>
+      <rect x="70" y="146" width="14" height="10" rx="2" fill="var(--color-background-secondary)" stroke="var(--color-border-secondary)" stroke-width="1"></rect>
+      <rect x="106" y="146" width="14" height="10" rx="2" fill="var(--color-background-secondary)" stroke="var(--color-border-secondary)" stroke-width="1"></rect>
+      <rect x="126" y="146" width="14" height="10" rx="2" fill="var(--color-background-secondary)" stroke="var(--color-border-secondary)" stroke-width="1"></rect>
+      <rect x="146" y="146" width="14" height="10" rx="2" fill="var(--color-background-secondary)" stroke="var(--color-border-secondary)" stroke-width="1"></rect>
+    </svg>
