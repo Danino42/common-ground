@@ -8,7 +8,6 @@ load_dotenv()
 
 app = FastAPI(title="Common Ground API")
 
-# Read allowed origins from env
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
 
 app.add_middleware(
