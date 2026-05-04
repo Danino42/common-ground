@@ -10,6 +10,11 @@ import yellowImg from '../../images/yellow.png';
 const API_URL = import.meta.env.VITE_API_URL ||
   `${window.location.protocol}//${window.location.hostname}:8000`;
 
+const GROUP_BG_COLORS = [
+  '#7c3aed', '#2563eb', '#dc2626', '#16a34a',
+  '#d97706', '#db2777', '#0d9488', '#ea580c',
+];
+
 function shuffleArray<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -82,8 +87,8 @@ export default function PlayerWaiting() {
 
   const [gameStarted, setGameStarted] = useState(false);
   const [cardSetId, setCardSetId] = useState<string | null>(null);
-
   const [randomizeDeck, setRandomizeDeck] = useState(false);
+  const [myGroup, setMyGroup] = useState<{ index: number; color: string } | null>(null);
 
   const cards = useMemo(() => {
     const set = mockCardSets.find(s => s.id === cardSetId) ?? mockCardSets[0];
@@ -99,7 +104,6 @@ export default function PlayerWaiting() {
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
   const [justMounted, setJustMounted] = useState(false);
 
-  // Interactive waiting shape state
   const [shapeIndex, setShapeIndex] = useState(0);
   const [colorIndex, setColorIndex] = useState(0);
   const [tapCount, setTapCount] = useState(0);
@@ -119,25 +123,30 @@ export default function PlayerWaiting() {
     }, 200);
   }, [isAnimating]);
 
-  // Poll for game start every 2 seconds
+  // Poll for game start and group assignment
   useEffect(() => {
-    if (gameStarted || !gameCode) return;
+    if (!gameCode) return;
     const check = async () => {
       try {
         const res = await fetch(`${API_URL}/games/${gameCode}`);
         const data = await res.json();
-        if (data.status === 'started') {
+        if (data.status === 'started' && !gameStarted) {
           setCardSetId(data.card_set_id);
           setRandomizeDeck(data.randomize_deck || false);
           setGameStarted(true);
         }
+        if (data.groups && playerId) {
+          const groupIndex = (data.groups as string[][]).findIndex(g => g.includes(playerId));
+          if (groupIndex !== -1) {
+            setMyGroup({ index: groupIndex, color: GROUP_BG_COLORS[groupIndex % GROUP_BG_COLORS.length] });
+          }
+        }
       } catch {}
     };
     check();
-    
     const interval = setInterval(check, 2000);
     return () => clearInterval(interval);
-  }, [gameCode, gameStarted]);
+  }, [gameCode, gameStarted, playerId]);
 
   const SWIPE_THRESHOLD = 90;
   const done = currentIndex >= cards.length;
@@ -200,8 +209,6 @@ export default function PlayerWaiting() {
     }
   }, { axis: undefined });
 
-  
-
   const rotation = dragX * 0.07;
   const swipeProgress = Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1);
   const isRight = dragX > 15;
@@ -209,6 +216,40 @@ export default function PlayerWaiting() {
 
   const currentShape = SHAPES[shapeIndex];
   const currentColor = COLORS[colorIndex];
+
+  // ── GROUP REVEAL SCREEN ──
+  if (myGroup !== null) {
+    return (
+      <div style={{
+        minHeight: '100svh',
+        background: myGroup.color,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        userSelect: 'none',
+      }}>
+        <p style={{
+          margin: '0 0 0.5rem',
+          fontSize: '1.1rem', fontWeight: 700,
+          color: 'rgba(255,255,255,0.6)',
+          textTransform: 'uppercase', letterSpacing: '0.15em',
+          fontFamily: 'Georgia, serif',
+        }}>
+          You're in
+        </p>
+        <p style={{
+          margin: 0,
+          fontSize: 'clamp(8rem, 35vw, 14rem)',
+          fontWeight: 900,
+          color: 'white',
+          lineHeight: 1,
+          textShadow: '0 8px 48px rgba(0,0,0,0.2)',
+          fontFamily: 'Georgia, serif',
+        }}>
+          {myGroup.index + 1}
+        </p>
+      </div>
+    );
+  }
 
   // ── WAITING SCREEN ──
   if (!gameStarted) {
@@ -226,7 +267,6 @@ export default function PlayerWaiting() {
           userSelect: 'none',
         }}
       >
-        {/* Animated background glow */}
         <div style={{
           position: 'absolute', inset: 0,
           background: `radial-gradient(circle at 50% 50%, ${currentColor}44 0%, transparent 70%)`,
@@ -234,7 +274,6 @@ export default function PlayerWaiting() {
           pointerEvents: 'none',
         }} />
 
-        {/* Top info */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '1.5rem', textAlign: 'center', zIndex: 2 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 8 }}>
             <img src={redImg} alt="" style={{ width: 16, height: 16, transform: 'rotate(-8deg)', opacity: 0.8 }} />
@@ -246,7 +285,6 @@ export default function PlayerWaiting() {
           </p>
         </div>
 
-        {/* Shape */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           width: 240, height: 240, position: 'relative', zIndex: 2,
@@ -256,7 +294,6 @@ export default function PlayerWaiting() {
           <ShapeDisplay shape={currentShape} color={currentColor} size={shapeSize} />
         </div>
 
-        {/* Tap instruction */}
         <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', marginTop: '3rem' }}>
           <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(0,0,0,0.35)' }}>
             Game starts when the facilitator is ready
@@ -267,7 +304,6 @@ export default function PlayerWaiting() {
             </p>
           )}
         </div>
-
       </div>
     );
   }
@@ -282,7 +318,6 @@ export default function PlayerWaiting() {
     }}>
       <AppBackground />
 
-      {/* Header */}
       <div style={{ position: 'relative', zIndex: 1, padding: '1.25rem 1.5rem 0', textAlign: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 6 }}>
           <img src={redImg} alt="" style={{ width: 18, height: 18, transform: 'rotate(-8deg)' }} />
@@ -388,7 +423,7 @@ export default function PlayerWaiting() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, padding: '2rem', textAlign: 'center' }}>
           <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #278967, #4ade80)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', marginBottom: '1.25rem', boxShadow: '0 8px 32px rgba(22,101,52,0.3)' }}>✓</div>
           <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.7rem', fontWeight: 900, color: '#1c1917', letterSpacing: '-0.5px' }}>All done!</h2>
-          <p style={{ color: '#78716c', fontSize: '0.95rem', margin: '0 0 2rem', lineHeight: 1.6 }}>Your answers have been recorded.<br />Waiting for the facilitator to start…</p>
+          <p style={{ color: '#78716c', fontSize: '0.95rem', margin: '0 0 2rem', lineHeight: 1.6 }}>Your answers have been recorded.<br />Waiting for the facilitator…</p>
           <div style={{ background: 'rgba(255,255,255,0.85)', border: '1.5px solid rgba(0,0,0,0.07)', borderRadius: 16, padding: '1.25rem', width: '100%', maxWidth: 280, marginBottom: '1.5rem' }}>
             <p style={{ margin: '0 0 0.75rem', fontWeight: 700, fontSize: '0.82rem', color: '#374151' }}>Your answers</p>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
@@ -405,7 +440,7 @@ export default function PlayerWaiting() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#9ca3af', fontSize: '0.82rem' }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80', animation: 'pulse 1.5s infinite' }} />
-            Waiting for game to start...
+            Waiting for groups to be assigned...
           </div>
         </div>
       )}

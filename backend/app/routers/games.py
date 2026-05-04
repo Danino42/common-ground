@@ -4,6 +4,9 @@ from app.models import GameCreate, PlayerJoin, CardAnswer
 import random
 import string
 
+from pydantic import BaseModel
+from typing import List
+
 router = APIRouter()
 
 def generate_lobby_code():
@@ -94,6 +97,7 @@ async def get_results(lobby_code: str):
         "lobby_code": lobby_code,
         "card_set_id": card_set_id,
         "players": game.get("players", []),
+        "answers": game.get("answers", {}),
         "results": results,
     }
 
@@ -125,3 +129,24 @@ async def start_game(lobby_code: str, card_set_id: str, randomize: bool = False)
         }}
     )
     return {"status": "started"}
+
+@router.get("/{lobby_code}/players-with-answers")
+async def get_players_with_answers(lobby_code: str):
+    game = await games.find_one({"lobby_code": lobby_code})
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    return {
+        "players": game.get("players", []),
+        "answers": game.get("answers", {}),
+    }
+
+class GroupsPayload(BaseModel):
+    groups: List[List[str]]  # list of groups, each group is a list of player_ids
+
+@router.patch("/{lobby_code}/groups")
+async def save_groups(lobby_code: str, data: GroupsPayload):
+    await games.update_one(
+        {"lobby_code": lobby_code},
+        {"$set": {"groups": data.groups}}
+    )
+    return {"status": "ok"}

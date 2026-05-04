@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { mockCardSets } from '../../data/mockData';
 import { ArrowLeft, Copy, Play, Users, Check, ChevronDown, Monitor, Shuffle, BarChart2, Smartphone } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -71,6 +71,8 @@ export default function CreateLobby() {
   const [lobbyCode] = useState<string | null>(codeFromUrl);
   const [copied, setCopied] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
+
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   const [toggles, setToggles] = useState({
     anonymousMode: false,
@@ -164,12 +166,12 @@ export default function CreateLobby() {
         boxShadow: `0 2px 16px ${config.color}11`,
       }}>
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-          <Link to="/facilitator/dashboard" style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            color: config.color, fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none'
-          }}>
-            <ArrowLeft size={15} /> Back to Dashboard
-          </Link>
+          <button
+            onClick={() => setShowLeaveConfirm(true)}
+            style={{ color: 'green', display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.82rem', fontWeight: 600 }}
+          >
+            <ArrowLeft size={18} /> Back to Dashboard
+          </button>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
             background: config.bg, border: `1.5px solid ${config.border}`,
@@ -357,7 +359,7 @@ export default function CreateLobby() {
                 )}
 
                 <p style={{ margin: '1rem 0 0', fontSize: '0.75rem', color: '#9ca3af', fontStyle: 'italic' }}>
-                  Players appear here as they join · turns green when done
+                  Players appear here as they join
                 </p>
               </div>
             )}
@@ -389,6 +391,53 @@ export default function CreateLobby() {
           </div>
         </div>
       </main>
+      {showLeaveConfirm && (
+              <div style={{
+                position: 'fixed', inset: 0, zIndex: 200,
+                background: 'rgba(0,0,0,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <div style={{
+                  background: 'white', borderRadius: 20, padding: '2rem',
+                  maxWidth: 380, width: '90%',
+                  boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
+                  textAlign: 'center',
+                }}>
+                  <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#fef2f2', border: '1.5px solid #fca5a5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                    <ArrowLeft size={20} color="#ef4444" />
+                  </div>
+                  <h3 style={{ margin: '0 0 0.5rem', fontWeight: 900, fontSize: '1.1rem', color: '#1c1917' }}>
+                    Leave this game?
+                  </h3>
+                  <p style={{ margin: '0 0 1.5rem', fontSize: '0.88rem', color: '#6b7280', lineHeight: 1.6 }}>
+                    Are you sure you want to go back to the dashboard? This will abort your game.
+                  </p>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => setShowLeaveConfirm(false)}
+                      style={{
+                        flex: 1, padding: '11px', borderRadius: 12,
+                        border: '1.5px solid #e5e7eb', background: 'white',
+                        color: '#374151', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer',
+                      }}
+                    >
+                      Stay
+                    </button>
+                    <button
+                      onClick={() => { window.location.href = '/facilitator/dashboard'; }}
+                      style={{
+                        flex: 1, padding: '11px', borderRadius: 12,
+                        border: 'none', background: '#ef4444',
+                        color: 'white', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(239,68,68,0.3)',
+                      }}
+                    >
+                      Leave
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
     </div>
   );
 }

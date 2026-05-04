@@ -1,157 +1,242 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Save,
+  RotateCcw,
+  Sparkles
+} from 'lucide-react';
 import AppBackground from '../AppBackground';
 
+type SavedSet = {
+  id: number;
+  name: string;
+  cards: string[];
+};
 
 export default function CreateCardSet() {
   const navigate = useNavigate();
+
   const [setName, setSetName] = useState('');
-  const [category, setCategory] = useState('');
-  const [cards, setCards] = useState(['', '', '']);
+  const [cards, setCards] = useState<string[]>(['', '', '']);
+  const [lastDeleted, setLastDeleted] = useState<{ value: string; index: number } | null>(null);
+
+  const [savedSets] = useState<SavedSet[]>([
+    { id: 1, name: 'Icebreakers', cards: ['I love coffee', 'I hate Mondays', 'I enjoy hiking'] },
+    { id: 2, name: 'Deep Talks', cards: ['Biggest fear?', 'Life goal?', 'Meaning of success?'] }
+  ]);
+
+  const [selectedSet, setSelectedSet] = useState<SavedSet | null>(null);
+  const [selectedCards, setSelectedCards] = useState<string[]>([]);
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: 12,
+    border: '1.5px solid #e5e7eb',
+    fontSize: '0.9rem',
+    outline: 'none',
+    transition: 'border-color 0.15s',
+    fontFamily: 'inherit'
+  };
 
   const addCard = () => setCards([...cards, '']);
 
-  const removeCard = (index:number) => {
-    if (cards.length > 1) setCards(cards.filter((_, i) => i !== index));
+  const removeCard = (index: number) => {
+    if (cards.length > 1) {
+      setLastDeleted({ value: cards[index], index });
+      setCards(cards.filter((_, i) => i !== index));
+    }
   };
 
-  const updateCard = (index:number, value:string) => {
+  const undoDelete = () => {
+    if (!lastDeleted) return;
+    const newCards = [...cards];
+    newCards.splice(lastDeleted.index, 0, lastDeleted.value);
+    setCards(newCards);
+    setLastDeleted(null);
+  };
+
+  const updateCard = (index: number, value: string) => {
     const newCards = [...cards];
     newCards[index] = value;
     setCards(newCards);
   };
 
-  const handleSave = () => navigate('/facilitator/dashboard');
-
-  const canSave = setName && category && cards.some(c => c.trim());
-
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '9px 12px', borderRadius: 10,
-    border: '1.5px solid #e5e7eb', fontSize: '0.875rem',
-    outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
-    transition: 'border-color 0.15s'
+  const toggleSelectCard = (card: string) => {
+    setSelectedCards(prev =>
+      prev.includes(card) ? prev.filter(c => c !== card) : [...prev, card]
+    );
   };
+
+  const importSelectedCards = () => {
+    setCards([...cards, ...selectedCards]);
+    setSelectedCards([]);
+  };
+
+  const generateAICards = () => {
+    const generated = Array.from({ length: 10 }, (_, i) => `AI generated card ${i + 1}`);
+    setCards([...cards, ...generated]);
+  };
+
+  const canSave = setName && cards.some(c => c.trim());
 
   return (
     <div className="min-h-screen" style={{ background: 'white', fontFamily: "'Georgia', serif" }}>
-
       <AppBackground />
 
-      {/* Header */}
+      {/* HEADER */}
       <header style={{
-        background: 'rgba(255,255,255,0.75)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(0,0,0,0.07)',
-        position: 'sticky', top: 0, zIndex: 50,
-        boxShadow: '0 2px 16px rgba(0,0,0,0.05)'
+        background: 'rgba(255,255,255,0.7)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(0,0,0,0.06)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 50
       }}>
-        <div className="max-w-4xl mx-auto px-6 py-3">
+        <div className="max-w-5xl mx-auto px-6 py-3">
           <Link to="/facilitator/dashboard" style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            color: '#15803d', fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none'
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            color: '#15803d',
+            fontWeight: 600,
+            fontSize: '0.9rem',
+            textDecoration: 'none'
           }}>
             <ArrowLeft size={15} /> Back to Dashboard
           </Link>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-10" style={{ position: 'relative', zIndex: 1 }}>
+      {/* MAIN */}
+      <main
+        className="max-w-5xl mx-auto px-6 py-10"
+        style={{
+          display: 'flex',
+          gap: '2rem',
+          position: 'relative',
+          zIndex: 1
+        }}
+      >
 
-        {/* Page title */}
-        <div style={{ marginBottom: '2.5rem' }}>
-          <h1 style={{ fontSize: '2.6rem', fontWeight: 900, color: '#1c1917', letterSpacing: '-1.5px', margin: 0, lineHeight: 1.1 }}>
-            Create Card Set
-          </h1>
-          <p style={{ color: '#78716c', marginTop: 8, fontSize: '1rem' }}>Build a custom card set for your game</p>
-        </div>
+        {/* LEFT */}
+        <div style={{ flex: 2 }}>
 
-        <div style={{
-          background: 'rgba(255,255,255,0.85)',
-          border: '1.5px solid rgba(0,0,0,0.07)',
-          borderRadius: 20,
-          padding: '2rem',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.05)'
-        }}>
-          <h2 style={{ margin: '0 0 0.25rem', fontSize: '1.1rem', fontWeight: 800, color: '#1c1917' }}>Card Set Details</h2>
-          <p style={{ margin: '0 0 1.75rem', fontSize: '0.82rem', color: '#9ca3af' }}>Give your card set a name and category</p>
-
-          {/* Name + Category row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.75rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 700, color: '#374151', marginBottom: 6 }}>
-                Card Set Name <span style={{ color: '#16a34a' }}>*</span>
-              </label>
-              <input
-                placeholder="e.g., Office Icebreakers"
-                value={setName}
-                onChange={(e) => setSetName(e.target.value)}
-                style={inputStyle}
-                onFocus={e => e.target.style.borderColor = '#4ade80'}
-                onBlur={e => e.target.style.borderColor = '#e5e7eb'}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 700, color: '#374151', marginBottom: 6 }}>
-                Category <span style={{ color: '#16a34a' }}>*</span>
-              </label>
-              <input
-                placeholder="e.g., Workplace, Hobbies, Travel"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                style={inputStyle}
-                onFocus={e => e.target.style.borderColor = '#4ade80'}
-                onBlur={e => e.target.style.borderColor = '#e5e7eb'}
-              />
-            </div>
+          <div style={{ marginBottom: '2.5rem' }}>
+            <h1 style={{
+              fontSize: '2.6rem',
+              fontWeight: 900,
+              letterSpacing: '-1.5px',
+              margin: 0
+            }}>
+              Create Card Set
+            </h1>
+            <p style={{ color: '#78716c', marginTop: 8 }}>
+              Build a custom deck for your session
+            </p>
           </div>
 
-          {/* Divider */}
-          <div style={{ borderTop: '1.5px solid #f3f4f6', paddingTop: '1.75rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <div>
-                <h3 style={{ margin: 0, fontWeight: 800, fontSize: '1rem', color: '#1c1917' }}>Cards</h3>
-                <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#9ca3af' }}>Add statements for your participants</p>
-              </div>
-              <span style={{
-                background: '#f0fdf4', border: '1.5px solid #bbf7d0',
-                color: '#15803d', fontSize: '0.75rem', fontWeight: 700,
-                padding: '3px 10px', borderRadius: 20
-              }}>
-                {cards.length} cards
-              </span>
+          <div style={{
+            background: 'rgba(255,255,255,0.85)',
+            border: '1.5px solid rgba(0,0,0,0.06)',
+            borderRadius: 20,
+            padding: '2rem',
+            boxShadow: '0 6px 28px rgba(0,0,0,0.04)'
+          }}>
+
+            {/* NAME */}
+            <div style={{ marginBottom: '1.75rem' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#374151' }}>
+                Deck Name
+              </label>
+              <input
+                value={setName}
+                onChange={(e) => setSetName(e.target.value)}
+                placeholder="e.g., Office Icebreakers"
+                style={inputStyle}
+                onFocus={e => e.target.style.borderColor = '#4ade80'}
+                onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+              />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1rem' }}>
+            {/* AI */}
+            <div style={{
+              marginBottom: '1.75rem',
+              padding: '1.2rem',
+              borderRadius: 16,
+              background: '#f0fdf4',
+              border: '1.5px solid #bbf7d0'
+            }}>
+              <p style={{ fontSize: '0.85rem', marginBottom: 8, color: '#166534', fontWeight: 600 }}>
+                Generate cards with AI
+              </p>
+              <input
+                placeholder="Fill up my deck with diverse cards matching my theme..."
+                style={{ ...inputStyle, marginBottom: 10 }}
+              />
+              <button
+                onClick={generateAICards}
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: 10,
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #16a34a, #4ade80)',
+                  color: 'white',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: 6
+                }}
+              >
+                <Sparkles size={14} /> Create 10 Cards
+              </button>
+            </div>
+
+            {/* CARDS */}
+            <div style={{ marginBottom: '1rem' }}>
               {cards.map((card, index) => (
-                <div key={index} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  {/* Card number pill */}
+                <div key={index} style={{
+                  display: 'flex',
+                  gap: 10,
+                  alignItems: 'center',
+                  marginBottom: 8
+                }}>
                   <span style={{
-                    width: 26, height: 26, borderRadius: '50%',
-                    background: '#f0fdf4', border: '1.5px solid #bbf7d0',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.7rem', fontWeight: 800, color: '#15803d', flexShrink: 0
+                    width: 26,
+                    height: 26,
+                    borderRadius: '50%',
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}>
                     {index + 1}
                   </span>
+
                   <input
-                    placeholder={`e.g., "I love traveling"`}
                     value={card}
                     onChange={(e) => updateCard(index, e.target.value)}
+                    placeholder="Write a card..."
                     style={{ ...inputStyle, flex: 1 }}
-                    onFocus={e => e.target.style.borderColor = '#4ade80'}
-                    onBlur={e => e.target.style.borderColor = '#e5e7eb'}
                   />
+
                   <button
                     onClick={() => removeCard(index)}
-                    disabled={cards.length === 1}
                     style={{
-                      width: 34, height: 34, borderRadius: 8, flexShrink: 0,
-                      border: '1.5px solid #fee2e2', background: '#fff5f5',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      cursor: cards.length === 1 ? 'not-allowed' : 'pointer',
-                      opacity: cards.length === 1 ? 0.4 : 1,
-                      transition: 'all 0.15s'
+                      border: 'none',
+                      background: '#fff5f5',
+                      borderRadius: 8,
+                      padding: 6,
+                      cursor: 'pointer'
                     }}
                   >
                     <Trash2 size={14} color="#ef4444" />
@@ -160,54 +245,140 @@ export default function CreateCardSet() {
               ))}
             </div>
 
-            <button
-              onClick={addCard}
-              style={{
-                width: '100%', padding: '10px', borderRadius: 10,
-                border: '1.5px dashed #bbf7d0', background: '#f0fdf4',
-                fontSize: '0.85rem', fontWeight: 700, color: '#15803d',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                transition: 'all 0.15s'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#dcfce7'; e.currentTarget.style.borderColor = '#4ade80'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.borderColor = '#bbf7d0'; }}
-            >
-              <Plus size={15} /> Add Another Card
-            </button>
-          </div>
+            {/* ACTION ROW */}
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <button
+                onClick={addCard}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 10,
+                  border: '1.5px dashed #bbf7d0',
+                  background: '#f0fdf4',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                <Plus size={14} /> Add Card
+              </button>
 
-          {/* Actions */}
-          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1.5px solid #f3f4f6' }}>
-            <button
-              onClick={handleSave}
-              disabled={!canSave}
-              style={{
-                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                background: canSave ? 'linear-gradient(135deg, #278967 0%, #4ade80 100%)' : '#e5e7eb',
-                color: canSave ? 'white' : '#9ca3af',
-                border: 'none', borderRadius: 12,
-                padding: '14px 24px', fontSize: '0.95rem', fontWeight: 800,
-                cursor: canSave ? 'pointer' : 'not-allowed',
-                boxShadow: canSave ? '0 8px 32px rgba(22,101,52,0.25)' : 'none',
-                transition: 'transform 0.15s'
-              }}
-              onMouseEnter={e => { if (canSave) e.currentTarget.style.transform = 'scale(1.02)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-            >
-              <Save size={16} /> Save Card Set
-            </button>
-            <button
-              onClick={() => navigate('/facilitator/dashboard')}
-              style={{
-                padding: '14px 24px', borderRadius: 12,
-                border: '1.5px solid #e5e7eb', background: 'white',
-                fontSize: '0.95rem', fontWeight: 700, color: '#374151', cursor: 'pointer'
-              }}
-            >
-              Cancel
-            </button>
+              {lastDeleted && (
+                <button
+                  onClick={undoDelete}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 10,
+                    border: '1px solid #e5e7eb',
+                    background: 'white',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <RotateCcw size={14} /> Undo
+                </button>
+              )}
+            </div>
+
+            {/* SAVE */}
+            <div style={{ marginTop: '2rem' }}>
+              <button
+                disabled={!canSave}
+                onClick={() => navigate('/facilitator/dashboard')}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  borderRadius: 12,
+                  border: 'none',
+                  fontWeight: 800,
+                  background: canSave
+                    ? 'linear-gradient(135deg, #278967, #4ade80)'
+                    : '#e5e7eb',
+                  color: canSave ? 'white' : '#9ca3af',
+                  cursor: canSave ? 'pointer' : 'not-allowed'
+                }}
+              >
+                <Save size={16} /> Save Card Set
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* RIGHT PANEL */}
+        <div style={{
+          flex: 1,
+          background: 'rgba(255,255,255,0.85)',
+          border: '1.5px solid rgba(0,0,0,0.06)',
+          borderRadius: 20,
+          padding: '1.5rem',
+          boxShadow: '0 6px 28px rgba(0,0,0,0.04)',
+          height: 'fit-content'
+        }}>
+          <h3 style={{ fontWeight: 800, marginBottom: '1rem' }}>Browse Saved Sets</h3>
+
+          {savedSets.map(set => (
+            <div
+              key={set.id}
+              onClick={() => setSelectedSet(set)}
+              style={{
+                padding: '8px 10px',
+                borderRadius: 10,
+                cursor: 'pointer',
+                marginBottom: 6,
+                background: selectedSet?.id === set.id ? '#f0fdf4' : 'transparent'
+              }}
+            >
+              {set.name}
+            </div>
+          ))}
+
+          {selectedSet && (
+            <>
+              <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#6b7280' }}>
+                Select cards to import
+              </div>
+
+              <div style={{ marginTop: 8 }}>
+                {selectedSet.cards.map((card, i) => (
+                  <div
+                    key={i}
+                    onClick={() => toggleSelectCard(card)}
+                    style={{
+                      padding: '8px',
+                      borderRadius: 10,
+                      marginBottom: 6,
+                      cursor: 'pointer',
+                      border: selectedCards.includes(card)
+                        ? '1.5px solid #4ade80'
+                        : '1.5px solid #f3f4f6',
+                      background: selectedCards.includes(card)
+                        ? '#f0fdf4'
+                        : 'white'
+                    }}
+                  >
+                    {card}
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={importSelectedCards}
+                style={{
+                  marginTop: '0.75rem',
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: 10,
+                  border: 'none',
+                  background: '#15803d',
+                  color: 'white',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Take selected cards
+              </button>
+            </>
+          )}
+        </div>
+
       </main>
     </div>
   );
