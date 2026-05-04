@@ -30,19 +30,10 @@ async def create_game(data: GameCreate, facilitator_email: str):
         "status": "waiting",
         "current_card_index": 0,
         "players": [],
-        "answers": {},  # {player_id: {card_id: true/false}}
+        "answers": {},
     }
     await games.insert_one(game)
     return {"lobby_code": lobby_code}
-
-@router.get("/{lobby_code}")
-async def get_game(lobby_code: str):
-    game = await games.find_one({"lobby_code": lobby_code})
-    if not game:
-        raise HTTPException(status_code=404, detail="Game not found")
-    game["id"] = str(game["_id"])
-    del game["_id"]
-    return game
 
 @router.post("/join")
 async def join_game(data: PlayerJoin):
@@ -76,7 +67,7 @@ async def submit_answer(data: CardAnswer):
 
     await games.update_one(
         {"lobby_code": data.lobby_code},
-        {"$set": {f"answers.{data.player_id}.{data.card_id}": data.answer}}
+        {"$set": {f"answers.{data.player_id}.{data.card_id}": data.answer}},
     )
     return {"status": "ok"}
 
@@ -89,7 +80,6 @@ async def get_results(lobby_code: str):
     answers = game.get("answers", {})
     card_set_id = game.get("card_set_id")
 
-    # Aggregate YES/NO counts per card
     results = {}
     for player_id, player_answers in answers.items():
         for card_id, answer in player_answers.items():
@@ -107,6 +97,15 @@ async def get_results(lobby_code: str):
         "results": results,
     }
 
+@router.get("/{lobby_code}")
+async def get_game(lobby_code: str):
+    game = await games.find_one({"lobby_code": lobby_code})
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    game["id"] = str(game["_id"])
+    del game["_id"]
+    return game
+
 @router.patch("/{lobby_code}/player/{player_id}/finished")
 async def mark_finished(lobby_code: str, player_id: str):
     await games.update_one(
@@ -114,3 +113,15 @@ async def mark_finished(lobby_code: str, player_id: str):
         {"$set": {"players.$.finished": True}}
     )
     return {"status": "ok"}
+
+@router.patch("/{lobby_code}/start")
+async def start_game(lobby_code: str, card_set_id: str, randomize: bool = False):
+    await games.update_one(
+        {"lobby_code": lobby_code},
+        {"$set": {
+            "status": "started",
+            "card_set_id": card_set_id,
+            "randomize_deck": randomize,
+        }}
+    )
+    return {"status": "started"}

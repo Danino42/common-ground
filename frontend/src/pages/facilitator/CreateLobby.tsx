@@ -77,11 +77,22 @@ export default function CreateLobby() {
     timerEnabled: false,
     showResults: true,
     allowLateJoin: true,
+    randomizeDeck: false,
   });
 
   const joinUrl = lobbyCode
     ? `${window.location.origin}/player/join?code=${lobbyCode}&mode=${mode}`
     : '';
+
+  const handleStartGame = async () => {
+    try {
+      await fetch(
+        `${API_URL}/games/${lobbyCode}/start?card_set_id=${selectedCardSet || '1'}&randomize=${toggles.randomizeDeck}`,
+        { method: 'PATCH' }
+      );
+    } catch {}
+    navigate(`/facilitator/game/${lobbyCode}`);
+  };
 
   // Poll every 3 seconds for new players
   useEffect(() => {
@@ -277,6 +288,7 @@ export default function CreateLobby() {
             <div style={{ background: 'rgba(255,255,255,0.85)', border: `1.5px solid ${config.border}`, borderRadius: 20, padding: '1.5rem', boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}>
               <h3 style={{ margin: '0 0 0.25rem', fontSize: '0.95rem', fontWeight: 800, color: '#1c1917' }}>Settings</h3>
               <p style={{ margin: '0 0 1rem', fontSize: '0.78rem', color: '#9ca3af' }}>Placeholder — coming soon</p>
+              <Toggle label="Randomize card order" value={toggles.randomizeDeck} onChange={() => toggle('randomizeDeck')} />
               <Toggle label="Anonymous mode" value={toggles.anonymousMode} onChange={() => toggle('anonymousMode')} />
               <Toggle label="Enable timer" value={toggles.timerEnabled} onChange={() => toggle('timerEnabled')} />
               <Toggle label="Show results live" value={toggles.showResults} onChange={() => toggle('showResults')} />
@@ -352,7 +364,7 @@ export default function CreateLobby() {
 
             <div style={{ background: 'rgba(255,255,255,0.85)', border: `1.5px solid ${config.border}`, borderRadius: 20, padding: '1.5rem', boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}>
               <button
-                onClick={() => navigate(`/facilitator/game/${lobbyCode || 'OFFLINE'}`)}
+                onClick={handleStartGame}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                   background: `linear-gradient(135deg, ${config.color} 0%, ${config.accent} 100%)`,

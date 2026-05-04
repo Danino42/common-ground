@@ -25,7 +25,6 @@ export default function App() {
       <Route path="/facilitator/create-card-set-ai" element={<CreateCardSetAI />} />
       <Route path="/facilitator/browse-card-sets" element={<BrowseCardSets />} />
       <Route path="/player/join" element={<PlayerJoin />} />
-      <Route path="/player/waiting/:gameCode/:cardSetId?" element={<PlayerWaiting />} />
       <Route path="/player/group-phase" element={<PlayerGroupPhase />} />
       <Route path="/player/waiting/:gameCode/:playerId" element={<PlayerWaiting />} />
     </Routes>

@@ -13,6 +13,7 @@ export default function FacilitatorGame() {
   const [showCard, setShowCard] = useState(true);
   const [currentResultIndex, setCurrentResultIndex] = useState(0);
   const [results, setResults] = useState<Record<string, { yes: number; no: number }>>({});
+  const [cardSetId, setCardSetId] = useState<string>('1');
 
   useEffect(() => {
     document.body.style.minHeight = '100svh';
@@ -41,6 +42,7 @@ export default function FacilitatorGame() {
       try {
         const res = await fetch(`${API_URL}/games/${lobbyCode}/results`);
         const data = await res.json();
+        if (data.card_set_id) setCardSetId(data.card_set_id);
         setResults(data.results || {});
       } catch {}
     };
@@ -49,7 +51,7 @@ export default function FacilitatorGame() {
     return () => clearInterval(interval);
   }, [lobbyCode]);
 
-  const selectedSet = mockCardSets[0];
+  const selectedSet = mockCardSets.find(s => s.id === cardSetId) ?? mockCardSets[0];
   const totalCards = selectedSet.cards.length;
   const currentCard = selectedSet.cards[currentCardIndex];
 
@@ -86,112 +88,12 @@ export default function FacilitatorGame() {
     transition: 'background 0.15s',
   };
 
-  // Results card view
-  const ResultsView = () => {
-    const card = selectedSet.cards[currentResultIndex];
-    const cardResults = results[card.id] || { yes: 0, no: 0 };
-    const total = cardResults.yes + cardResults.no;
-    const yesPercent = total > 0 ? Math.round((cardResults.yes / total) * 100) : 0;
-    const noPercent = total > 0 ? Math.round((cardResults.no / total) * 100) : 0;
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-
-        {/* Header bar */}
-        <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', borderRadius: 14, padding: '1rem 1.5rem', border: '1px solid rgba(255,255,255,0.25)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ color: 'white', fontWeight: 700, fontSize: '0.9rem' }}>Live Results · Swipe Mode</span>
-          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
-            Card {currentResultIndex + 1} of {totalCards}
-          </span>
-        </div>
-
-        {/* Card + chart */}
-        <div style={{
-          background: 'rgba(255,255,255,0.97)', borderRadius: 24,
-          padding: '3rem', textAlign: 'center',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.2)',
-        }}>
-          <p style={{ fontSize: '2rem', fontWeight: 900, color: '#1c1917', margin: '0 0 2.5rem', letterSpacing: '-0.5px', lineHeight: 1.3 }}>
-            {card.text}
-          </p>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-
-            {/* YES bar */}
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', fontWeight: 700, color: '#15803d' }}>YEAH</p>
-              <div style={{ height: 140, background: '#f0fdf4', borderRadius: 14, position: 'relative', overflow: 'hidden', border: '1.5px solid #bbf7d0' }}>
-                <div style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0,
-                  height: `${yesPercent}%`,
-                  background: 'linear-gradient(180deg, #4ade80, #15803d)',
-                  borderRadius: '12px 12px 0 0',
-                  transition: 'height 0.6s ease',
-                }} />
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: '2.5rem', fontWeight: 900, color: '#15803d' }}>{cardResults.yes}</span>
-                </div>
-              </div>
-              <p style={{ margin: '0.5rem 0 0', fontSize: '1.3rem', fontWeight: 900, color: '#15803d' }}>{yesPercent}%</p>
-            </div>
-
-            {/* NO bar */}
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', fontWeight: 700, color: '#ef4444' }}>NOPE</p>
-              <div style={{ height: 140, background: '#fff5f5', borderRadius: 14, position: 'relative', overflow: 'hidden', border: '1.5px solid #fca5a5' }}>
-                <div style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0,
-                  height: `${noPercent}%`,
-                  background: 'linear-gradient(180deg, #f87171, #ef4444)',
-                  borderRadius: '12px 12px 0 0',
-                  transition: 'height 0.6s ease',
-                }} />
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ef4444' }}>{cardResults.no}</span>
-                </div>
-              </div>
-              <p style={{ margin: '0.5rem 0 0', fontSize: '1.3rem', fontWeight: 900, color: '#ef4444' }}>{noPercent}%</p>
-            </div>
-          </div>
-
-          <p style={{ margin: 0, fontSize: '0.82rem', color: '#9ca3af' }}>
-            {total} {total === 1 ? 'response' : 'responses'} · updates every 3s
-          </p>
-        </div>
-
-        {/* Prev / Next */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
-          <button
-            onClick={() => setCurrentResultIndex(i => Math.max(0, i - 1))}
-            disabled={currentResultIndex === 0}
-            style={{ ...ghostBtn, opacity: currentResultIndex === 0 ? 0.4 : 1 }}
-          >
-            <ArrowLeft size={18} /> Previous
-          </button>
-          <button
-            onClick={() => setCurrentResultIndex(i => Math.min(totalCards - 1, i + 1))}
-            disabled={currentResultIndex === totalCards - 1}
-            style={{ ...ghostBtn, background: 'white', color: '#166534', border: 'none', fontWeight: 800, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', opacity: currentResultIndex === totalCards - 1 ? 0.4 : 1 }}
-          >
-            Next <ArrowRight size={18} />
-          </button>
-        </div>
-
-        {/* End game */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
-          <Link to="/facilitator/dashboard" style={{ textDecoration: 'none' }}>
-            <button style={ghostBtn}>End Game</button>
-          </Link>
-          <button
-            onClick={() => { setCurrentPhase('phase1'); setCurrentCardIndex(0); setShowCard(true); setCurrentResultIndex(0); }}
-            style={{ ...ghostBtn, background: '#4ade80', color: '#052e16', border: 'none', fontWeight: 800 }}
-          >
-            <RotateCcw size={16} /> New Round
-          </button>
-        </div>
-      </div>
-    );
-  };
+  // Compute current result card inline so it always uses latest results state
+  const resultCard = selectedSet.cards[currentResultIndex];
+  const cardResults = resultCard ? (results[resultCard.id] || { yes: 0, no: 0 }) : { yes: 0, no: 0 };
+  const total = cardResults.yes + cardResults.no;
+  const yesPercent = total > 0 ? Math.round((cardResults.yes / total) * 100) : 0;
+  const noPercent = total > 0 ? Math.round((cardResults.no / total) * 100) : 0;
 
   return (
     <div className="min-h-screen" style={{
@@ -284,7 +186,7 @@ export default function FacilitatorGame() {
                 <ArrowLeft size={18} /> Previous
               </button>
               {currentCardIndex < totalCards - 1 ? (
-                <button onClick={nextCard} style={{ ...ghostBtn, background: 'white', color: '#166534', border: 'none', fontWeight: 800, boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
+                <button onClick={nextCard} style={{ ...ghostBtn, background: 'white', color: '#166634', border: 'none', fontWeight: 800, boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
                   Next Card <ArrowRight size={18} />
                 </button>
               ) : (
@@ -359,8 +261,102 @@ export default function FacilitatorGame() {
           </div>
         )}
 
-        {/* RESULTS */}
-        {currentPhase === 'results' && <ResultsView />}
+        {/* RESULTS — inline, not a sub-component, so state updates flow correctly */}
+        {currentPhase === 'results' && resultCard && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+            <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', borderRadius: 14, padding: '1rem 1.5rem', border: '1px solid rgba(255,255,255,0.25)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'white', fontWeight: 700, fontSize: '0.9rem' }}>Live Results · Swipe Mode</span>
+              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
+                Card {currentResultIndex + 1} of {totalCards}
+              </span>
+            </div>
+
+            <div style={{
+              background: 'rgba(255,255,255,0.97)', borderRadius: 24,
+              padding: '3rem', textAlign: 'center',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.2)',
+            }}>
+              <p style={{ fontSize: '2rem', fontWeight: 900, color: '#1c1917', margin: '0 0 2.5rem', letterSpacing: '-0.5px', lineHeight: 1.3 }}>
+                {resultCard.text}
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+
+                {/* YES bar */}
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', fontWeight: 700, color: '#15803d' }}>YEAH</p>
+                  <div style={{ height: 140, background: '#f0fdf4', borderRadius: 14, position: 'relative', overflow: 'hidden', border: '1.5px solid #bbf7d0' }}>
+                    <div style={{
+                      position: 'absolute', bottom: 0, left: 0, right: 0,
+                      height: `${yesPercent}%`,
+                      background: 'linear-gradient(180deg, #4ade80, #15803d)',
+                      borderRadius: '12px 12px 0 0',
+                      transition: 'height 0.6s ease',
+                    }} />
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: '2.5rem', fontWeight: 900, color: '#15803d' }}>{cardResults.yes}</span>
+                    </div>
+                  </div>
+                  <p style={{ margin: '0.5rem 0 0', fontSize: '1.3rem', fontWeight: 900, color: '#15803d' }}>{yesPercent}%</p>
+                </div>
+
+                {/* NO bar */}
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', fontWeight: 700, color: '#ef4444' }}>NOPE</p>
+                  <div style={{ height: 140, background: '#fff5f5', borderRadius: 14, position: 'relative', overflow: 'hidden', border: '1.5px solid #fca5a5' }}>
+                    <div style={{
+                      position: 'absolute', bottom: 0, left: 0, right: 0,
+                      height: `${noPercent}%`,
+                      background: 'linear-gradient(180deg, #f87171, #ef4444)',
+                      borderRadius: '12px 12px 0 0',
+                      transition: 'height 0.6s ease',
+                    }} />
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: '2.5rem', fontWeight: 900, color: '#ef4444' }}>{cardResults.no}</span>
+                    </div>
+                  </div>
+                  <p style={{ margin: '0.5rem 0 0', fontSize: '1.3rem', fontWeight: 900, color: '#ef4444' }}>{noPercent}%</p>
+                </div>
+              </div>
+
+              <p style={{ margin: 0, fontSize: '0.82rem', color: '#9ca3af' }}>
+                {total} {total === 1 ? 'response' : 'responses'} · updates every 3s
+              </p>
+            </div>
+
+            {/* Prev / Next */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+              <button
+                onClick={() => setCurrentResultIndex(i => Math.max(0, i - 1))}
+                disabled={currentResultIndex === 0}
+                style={{ ...ghostBtn, opacity: currentResultIndex === 0 ? 0.4 : 1 }}
+              >
+                <ArrowLeft size={18} /> Previous
+              </button>
+              <button
+                onClick={() => setCurrentResultIndex(i => Math.min(totalCards - 1, i + 1))}
+                disabled={currentResultIndex === totalCards - 1}
+                style={{ ...ghostBtn, background: 'white', color: '#166534', border: 'none', fontWeight: 800, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', opacity: currentResultIndex === totalCards - 1 ? 0.4 : 1 }}
+              >
+                Next <ArrowRight size={18} />
+              </button>
+            </div>
+
+            {/* End game */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+              <Link to="/facilitator/dashboard" style={{ textDecoration: 'none' }}>
+                <button style={ghostBtn}>End Game</button>
+              </Link>
+              <button
+                onClick={() => { setCurrentPhase('phase1'); setCurrentCardIndex(0); setShowCard(true); setCurrentResultIndex(0); }}
+                style={{ ...ghostBtn, background: '#4ade80', color: '#052e16', border: 'none', fontWeight: 800 }}
+              >
+                <RotateCcw size={16} /> New Round
+              </button>
+            </div>
+          </div>
+        )}
 
       </main>
     </div>
