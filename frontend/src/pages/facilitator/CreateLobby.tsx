@@ -5,6 +5,8 @@ import { ArrowLeft, Copy, Play, Users, Check, ChevronDown, Monitor, Shuffle, Bar
 import { QRCodeSVG } from 'qrcode.react';
 import AppBackground from '../AppBackground';
 import { API_URL } from '../../utils/api';
+import { loadSavedIds, } from '../../utils/savedSets';
+import { getUser, isLoggedIn } from '../../utils/auth';
 
 const MODE_CONFIG = {
   swipe: {
@@ -71,30 +73,21 @@ export default function CreateLobby() {
   const [lobbyCode] = useState<string | null>(codeFromUrl);
   const [copied, setCopied] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
-
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [randomizeDeck, setRandomizeDeck] = useState(false);
+  const [savedIds, setSavedIds] = useState<string[]>([]);
 
-  const [toggles, setToggles] = useState({
-    anonymousMode: false,
-    timerEnabled: false,
-    showResults: true,
-    allowLateJoin: true,
-    randomizeDeck: false,
-  });
+  const sessionUser = getUser();
+  const guest = !isLoggedIn();
 
   const joinUrl = lobbyCode
     ? `${window.location.origin}/player/join?code=${lobbyCode}&mode=${mode}`
     : '';
 
-  const handleStartGame = async () => {
-    try {
-      await fetch(
-        `${API_URL}/games/${lobbyCode}/start?card_set_id=${selectedCardSet || '1'}&randomize=${toggles.randomizeDeck}`,
-        { method: 'PATCH' }
-      );
-    } catch {}
-    navigate(`/facilitator/game/${lobbyCode}`);
-  };
+  // Load saved set IDs
+  useEffect(() => {
+    loadSavedIds().then(setSavedIds);
+  }, []);
 
   // Poll every 3 seconds for new players
   useEffect(() => {
@@ -111,6 +104,16 @@ export default function CreateLobby() {
     return () => clearInterval(interval);
   }, [lobbyCode]);
 
+  const handleStartGame = async () => {
+    try {
+      await fetch(
+        `${API_URL}/games/${lobbyCode}/start?card_set_id=${selectedCardSet || '1'}&randomize=${randomizeDeck}`,
+        { method: 'PATCH' }
+      );
+    } catch {}
+    navigate(`/facilitator/game/${lobbyCode}`);
+  };
+
   const copyLobbyCode = () => {
     if (!lobbyCode) return;
     navigator.clipboard.writeText(lobbyCode);
@@ -118,9 +121,10 @@ export default function CreateLobby() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const toggle = (key: keyof typeof toggles) => {
-    setToggles(prev => ({ ...prev, [key]: !prev[key] }));
-  };
+  // Build dropdown options: saved first, then premade, deduped
+  const savedSetIds = new Set(savedIds);
+  const savedSets = mockCardSets.filter(s => savedSetIds.has(s.id));
+  const premadeSets = mockCardSets.filter(s => s.author === 'System' && !savedSetIds.has(s.id));
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '9px 12px', borderRadius: 10,
@@ -128,29 +132,6 @@ export default function CreateLobby() {
     outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
     background: 'white',
   };
-
-  const Toggle = ({ label, value, onChange }: { label: string; value: boolean; onChange: () => void }) => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
-      <span style={{ fontSize: '0.83rem', color: '#374151', fontWeight: 600 }}>{label}</span>
-      <div
-        onClick={onChange}
-        style={{
-          width: 40, height: 22, borderRadius: 11,
-          background: value ? config.color : '#e5e7eb',
-          position: 'relative', cursor: 'pointer',
-          transition: 'background 0.2s',
-          flexShrink: 0,
-        }}
-      >
-        <div style={{
-          position: 'absolute', top: 3, left: value ? 21 : 3,
-          width: 16, height: 16, borderRadius: '50%',
-          background: 'white', transition: 'left 0.2s',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
-        }} />
-      </div>
-    </div>
-  );
 
   const finishedCount = players.filter(p => p.finished).length;
 
@@ -168,18 +149,26 @@ export default function CreateLobby() {
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <button
             onClick={() => setShowLeaveConfirm(true)}
-            style={{ color: 'green', display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.82rem', fontWeight: 600 }}
+            style={{ color: config.color, display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.82rem', fontWeight: 600 }}
           >
             <ArrowLeft size={18} /> Back to Dashboard
           </button>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: config.bg, border: `1.5px solid ${config.border}`,
-            borderRadius: 20, padding: '5px 14px',
-            color: config.color, fontSize: '0.82rem', fontWeight: 700,
-          }}>
-            {config.icon}
-            {config.label}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Logged in indicator */}
+            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#991b1b' }}>
+              {guest ? 'Guest session' : `Logged in as ${sessionUser?.email?.slice(0, 5)}...`}
+            </span>
+
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              background: config.bg, border: `1.5px solid ${config.border}`,
+              borderRadius: 20, padding: '5px 14px',
+              color: config.color, fontSize: '0.82rem', fontWeight: 700,
+            }}>
+              {config.icon}
+              {config.label}
+            </div>
           </div>
         </div>
       </header>
@@ -263,9 +252,20 @@ export default function CreateLobby() {
                     style={{ ...inputStyle, appearance: 'none', paddingRight: 32, cursor: 'pointer' }}
                   >
                     <option value="">Choose a card set...</option>
-                    {mockCardSets.map(set => (
-                      <option key={set.id} value={set.id}>{set.name} ({set.cards.length} cards)</option>
-                    ))}
+                    {savedSets.length > 0 && (
+                      <optgroup label="── Saved Sets">
+                        {savedSets.map(set => (
+                          <option key={set.id} value={set.id}>{set.name} ({set.cards.length} cards)</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {premadeSets.length > 0 && (
+                      <optgroup label="── Premade Sets">
+                        {premadeSets.map(set => (
+                          <option key={set.id} value={set.id}>{set.name} ({set.cards.length} cards)</option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                   <ChevronDown size={14} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', pointerEvents: 'none' }} />
                 </div>
@@ -288,13 +288,16 @@ export default function CreateLobby() {
             )}
 
             <div style={{ background: 'rgba(255,255,255,0.85)', border: `1.5px solid ${config.border}`, borderRadius: 20, padding: '1.5rem', boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}>
-              <h3 style={{ margin: '0 0 0.25rem', fontSize: '0.95rem', fontWeight: 800, color: '#1c1917' }}>Settings</h3>
-              <p style={{ margin: '0 0 1rem', fontSize: '0.78rem', color: '#9ca3af' }}>Placeholder — coming soon</p>
-              <Toggle label="Randomize card order" value={toggles.randomizeDeck} onChange={() => toggle('randomizeDeck')} />
-              <Toggle label="Anonymous mode" value={toggles.anonymousMode} onChange={() => toggle('anonymousMode')} />
-              <Toggle label="Enable timer" value={toggles.timerEnabled} onChange={() => toggle('timerEnabled')} />
-              <Toggle label="Show results live" value={toggles.showResults} onChange={() => toggle('showResults')} />
-              {config.hasJoin && <Toggle label="Allow late join" value={toggles.allowLateJoin} onChange={() => toggle('allowLateJoin')} />}
+              <h3 style={{ margin: '0 0 1rem', fontSize: '0.95rem', fontWeight: 800, color: '#1c1917' }}>Settings</h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.83rem', color: '#374151', fontWeight: 600 }}>Randomize card order</span>
+                <div
+                  onClick={() => setRandomizeDeck(v => !v)}
+                  style={{ width: 40, height: 22, borderRadius: 11, background: randomizeDeck ? config.color : '#e5e7eb', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}
+                >
+                  <div style={{ position: 'absolute', top: 3, left: randomizeDeck ? 21 : 3, width: 16, height: 16, borderRadius: '50%', background: 'white', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
+                </div>
+              </div>
             </div>
 
             {mode === 'circle' && (
@@ -343,10 +346,8 @@ export default function CreateLobby() {
                         <div style={{
                           width: 22, height: 22, borderRadius: '50%',
                           background: player.finished ? '#15803d' : config.color,
-                          color: 'white',
-                          fontSize: '0.65rem', fontWeight: 800,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          flexShrink: 0,
+                          color: 'white', fontSize: '0.65rem', fontWeight: 800,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                         }}>
                           {player.finished ? '✓' : player.name[0].toUpperCase()}
                         </div>
@@ -391,53 +392,28 @@ export default function CreateLobby() {
           </div>
         </div>
       </main>
+
       {showLeaveConfirm && (
-              <div style={{
-                position: 'fixed', inset: 0, zIndex: 200,
-                background: 'rgba(0,0,0,0.4)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <div style={{
-                  background: 'white', borderRadius: 20, padding: '2rem',
-                  maxWidth: 380, width: '90%',
-                  boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
-                  textAlign: 'center',
-                }}>
-                  <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#fef2f2', border: '1.5px solid #fca5a5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-                    <ArrowLeft size={20} color="#ef4444" />
-                  </div>
-                  <h3 style={{ margin: '0 0 0.5rem', fontWeight: 900, fontSize: '1.1rem', color: '#1c1917' }}>
-                    Leave this game?
-                  </h3>
-                  <p style={{ margin: '0 0 1.5rem', fontSize: '0.88rem', color: '#6b7280', lineHeight: 1.6 }}>
-                    Are you sure you want to go back to the dashboard? This will abort your game.
-                  </p>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      onClick={() => setShowLeaveConfirm(false)}
-                      style={{
-                        flex: 1, padding: '11px', borderRadius: 12,
-                        border: '1.5px solid #e5e7eb', background: 'white',
-                        color: '#374151', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer',
-                      }}
-                    >
-                      Stay
-                    </button>
-                    <button
-                      onClick={() => { window.location.href = '/facilitator/dashboard'; }}
-                      style={{
-                        flex: 1, padding: '11px', borderRadius: 12,
-                        border: 'none', background: '#ef4444',
-                        color: 'white', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer',
-                        boxShadow: '0 4px 12px rgba(239,68,68,0.3)',
-                      }}
-                    >
-                      Leave
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'white', borderRadius: 20, padding: '2rem', maxWidth: 380, width: '90%', boxShadow: '0 24px 60px rgba(0,0,0,0.2)', textAlign: 'center' }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#fef2f2', border: '1.5px solid #fca5a5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+              <ArrowLeft size={20} color="#ef4444" />
+            </div>
+            <h3 style={{ margin: '0 0 0.5rem', fontWeight: 900, fontSize: '1.1rem', color: '#1c1917' }}>Leave this game?</h3>
+            <p style={{ margin: '0 0 1.5rem', fontSize: '0.88rem', color: '#6b7280', lineHeight: 1.6 }}>
+              Are you sure you want to go back to the dashboard? This will abort your game.
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowLeaveConfirm(false)} style={{ flex: 1, padding: '11px', borderRadius: 12, border: '1.5px solid #e5e7eb', background: 'white', color: '#374151', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer' }}>
+                Stay
+              </button>
+              <button onClick={() => { window.location.href = '/facilitator/dashboard'; }} style={{ flex: 1, padding: '11px', borderRadius: 12, border: 'none', background: '#ef4444', color: 'white', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}>
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

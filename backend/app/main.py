@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth_router, card_sets, games
 import os
 from dotenv import load_dotenv
+from app.routers import facilitators
 
 load_dotenv()
 
@@ -21,6 +22,7 @@ app.add_middleware(
 app.include_router(auth_router.router, prefix="/auth", tags=["auth"])
 app.include_router(card_sets.router, prefix="/card-sets", tags=["card-sets"])
 app.include_router(games.router, prefix="/games", tags=["games"])
+app.include_router(facilitators.router, prefix="/facilitators")
 
 @app.get("/")
 def root():
