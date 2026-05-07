@@ -90,10 +90,7 @@ export default function PlayerWaiting() {
   const [randomizeDeck, setRandomizeDeck] = useState(false);
   const [myGroup, setMyGroup] = useState<{ index: number; color: string } | null>(null);
 
-  const cards = useMemo(() => {
-    const set = mockCardSets.find(s => s.id === cardSetId) ?? mockCardSets[0];
-    return randomizeDeck ? shuffleArray(set.cards) : set.cards;
-  }, [cardSetId, randomizeDeck]);
+  const [cards, setCards] = useState<{ id: string; text: string }[]>([]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
@@ -133,6 +130,8 @@ export default function PlayerWaiting() {
         if (data.status === 'started' && !gameStarted) {
           setCardSetId(data.card_set_id);
           setRandomizeDeck(data.randomize_deck || false);
+          const rawCards = data.cards || [];
+          setCards(data.randomize_deck ? shuffleArray(rawCards) : rawCards);
           setGameStarted(true);
         }
         if (data.groups && playerId) {

@@ -1,0 +1,132 @@
+Project: Common Ground — Icebreaker Game Platform
+Stack: React + TypeScript + Vite (Vercel) / FastAPI + MongoDB Atlas (Render)
+Repo: https://github.com/Danino42/common-ground
+Frontend: https://common-ground-three.vercel.app
+Backend: https://common-ground-backend-q6e1.onrender.com
+
+Current Architecture
+Auth: Email OTP only (no password). First login auto-creates account. JWT in localStorage (7 days). SendGrid HTTP API for OTP emails.
+Card sets: Stored in MongoDB card_sets collection. Games embed cards directly at start time. Players never fetch sets separately.
+Deck hash: base64 of {n: name, c: [card texts]} — stored in MongoDB, shown truncated in preview modal with copy button.
+Game modes: Swipe, Circle (offline), Random Groups, Topic by Topic.
+
+Backend Files
+app/routers/facilitators.py
+
+POST /facilitators/login/request — upserts facilitator, sends OTP via SendGrid HTTP API
+POST /facilitators/login/verify — verifies OTP, returns JWT
+GET /facilitators/me — returns email + saved_card_sets
+GET /facilitators/me/saved-sets — returns saved set IDs
+PATCH /facilitators/me/saved-sets — updates saved set IDs
+
+app/routers/card_sets.py
+Full CRUD + save/unsave:
+
+GET /card-sets/ — lists sets visible to user (system + public + own), includes saved boolean
+GET /card-sets/{id} — get by MongoDB ID
+POST /card-sets/ — create, generates deck_hash, auto-saves to facilitator
+PATCH /card-sets/{id} — update (own sets only), regenerates hash
+DELETE /card-sets/{id} — delete (own sets only)
+POST /card-sets/{id}/save — add to saved
+DELETE /card-sets/{id}/save — remove from saved
+
+app/routers/games.py
+
+start_game fetches card set from MongoDB, embeds cards array directly in game document
+get_results returns cards field so frontend never needs to look up sets separately
+
+app/seed.py
+Seeds 6 premade sets into MongoDB. Run once:
+bashcd backend
+python -m app.seed
+app/database.py
+Exports db (AsyncIOMotorClient) and games = db["games"]
+.env variables required:
+MONGODB_URL=mongodb+srv://...
+DATABASE_NAME=commonground
+SECRET_KEY=...
+ALLOWED_ORIGINS=http://localhost:5173,...
+SMTP_PASS=SG.xxxxx  # SendGrid API key
+FROM_EMAIL=yourapp@gmail.com
+
+Frontend Files
+src/utils/auth.ts
+AuthUser = { email: string }. Functions: saveSession, getUser, clearSession, isLoggedIn, authHeaders, getToken.
+src/utils/api.ts
+Full cardSetsApi object: list, get, create, update, delete, save, unsave. CardSet interface includes id, name, category, description, cards, author, author_email, is_public, saved, deck_hash, created_at.
+src/utils/savedSets.ts
+loadSavedIds / saveSavedIds — backend for logged-in users, localStorage for guests.
+Pages
+FacilitatorLogin.tsx — Email → OTP two-step flow. Spam folder warning. Guest option.
+FacilitatorDashboard.tsx — Shows Logged in as tothd... in header (dark red). Game mode selection. Launch Game banner. My Card Sets button.
+FacilitatorProfile.tsx — Shows email only (no username/password). Sign out button. Upload picture placeholder.
+CreateLobby.tsx
+
+Card set dropdown loads from cardSetsApi.list() — Saved Sets group first, then Premade Sets, deduped
+User-created sets appear via getUserSets() merged with API sets
+Only "Randomize card order" toggle remains
+Logged in as tothd... shown in header (dark red)
+Leave confirmation modal
+
+CardLibrary.tsx — Fully wired to backend. No mock data.
+
+Tabs: Saved, My Sets, Premade, Community
+Community tab loads from backend (is_public: true, author !== 'system')
+toggleSave calls cardSetsApi.save/unsave
+Delete with confirmation modal (My Sets only)
+Publish to Community button in My Sets — creates a clone with is_public: true, original stays in My Sets
+Publish confirmation shows deck name, tothd..., date, card count (centered)
+Preview modal: centered info, deck hash truncated to 28 chars with Copy button
+author_email stored as first 5 chars only via apiSetToItem
+DeckEditor saves to backend via cardSetsApi.update
+
+CreateCardSet.tsx — Fully wired to backend. No mock data, no localStorage, no userSets.
+
+Loads edit set from cardSetsApi.get(editId) async
+isCopy = editing system/premade set → creates new set
+isEdit = editing own set → updates in place
+Save calls cardSetsApi.create or cardSetsApi.update
+Import from Saved Sets panel loads from cardSetsApi.list() filtered to saved: true
+Per-set "Select all in set" / "Deselect all in set"
+CSV/TXT file import
+AI generation (mocked, TODO: wire to backend)
+Undo stack (up to 5 deletions), always visible
+Save error banner on failure
+
+PlayerWaiting.tsx — Cards loaded from data.cards in game document (not mockCardSets). Group reveal fullscreen screen.
+FacilitatorGame.tsx — Cards loaded from game document via get_results endpoint.
+
+What's been removed / deprecated
+
+userSets.ts — deleted, replaced by backend
+mockCardSets — removed from all game-flow files
+savedSets.ts localStorage — still exists for guest fallback but backend is primary
+communitySets.ts — never created, community comes from backend
+Password fields — removed everywhere
+All SMTP-based email sending — replaced with SendGrid HTTP API
+
+
+Pending / TODO
+
+ Deck hash short ID (Option B) — generate a 10-char alphanumeric short_id in backend, store alongside full hash, display/copy that instead. Add DB index for future import lookup.
+ Deck hash import UI — paste a short ID or full hash in CreateCardSet to pre-fill the form
+ AI card generation — wire handleAIGenerate to POST /card-sets/generate backend endpoint
+ Topic by Topic player view — not yet implemented
+ Wire CreateLobby card set dropdown fully to backend — currently still mixes getUserSets() with API; should be pure API
+ Remove savedSets.ts localStorage for logged-in users entirely once backend is confirmed stable
+ PATCH /facilitators/me endpoint for future profile updates
+ Similarity-based grouping — currently random only
+ Fix SVG camelCase warnings in GameModeIllustrations.tsx
+ Run python -m app.seed once in production to seed premade sets if not done yet
+ Community set author display — currently shows author_email sliced to 5 chars; consider storing a display name instead
+ mockData.ts — check if anything still imports from it and clean up
+
+
+Design Notes
+
+Green theme (#15803d). Georgia serif font.
+Number circles: grey background (#f3f4f6), black text.
+Save/bookmark buttons: #c8956a unsaved, #fef9c3/#a16207 saved.
+Logged in indicator: dark red #991b1b, first 5 chars of email + ...
+Leave/delete confirmation modals: red, centered.
+Spam folder warning on OTP screen: amber panel.

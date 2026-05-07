@@ -61,6 +61,7 @@ export default function FacilitatorGame() {
         const res = await fetch(`${API_URL}/games/${lobbyCode}/results`);
         const data = await res.json();
         if (data.card_set_id) setCardSetId(data.card_set_id);
+        if (data.cards && data.cards.length > 0) setCards(data.cards);
         setResults(data.results || {});
         setPlayers(data.players || []);
         setPlayerAnswers(data.answers || {});
@@ -71,8 +72,8 @@ export default function FacilitatorGame() {
     return () => clearInterval(interval);
   }, [lobbyCode]);
 
-  const selectedSet = mockCardSets.find(s => s.id === cardSetId) ?? mockCardSets[0];
-  const cards = selectedSet.cards;
+  const [cards, setCards] = useState<{ id: string; text: string }[]>([]);
+
 
   return (
     <div style={{
@@ -112,10 +113,6 @@ export default function FacilitatorGame() {
                 {lobbyCode}
               </p>
             </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 6px #22c55e' }} />
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6b7280' }}>Live</span>
           </div>
         </div>
       </header>

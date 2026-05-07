@@ -5,10 +5,8 @@ import {
   ChevronDown, ChevronUp, Check, Upload
 } from 'lucide-react';
 import AppBackground from '../AppBackground';
-import { mockCardSets } from '../../data/mockData';
-import { saveSavedIds, loadSavedIds } from '../../utils/savedSets';
-import { saveUserSet } from '../../utils/userSets';
-import { getUserSets } from '../../utils/userSets';
+import { cardSetsApi } from '../../utils/api';
+import type { CardSet } from '../../utils/api';
 
 interface CardItem { id: string; text: string; }
 
@@ -23,50 +21,74 @@ const numCircle: React.CSSProperties = {
 
 const MAX_UNDO = 5;
 
-
 export default function CreateCardSet() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const editSet = editId ? mockCardSets.find(s => s.id === editId || s.id === editId.replace('saved-', '')) : null;
+  // The set being edited, loaded from backend
+  const [editSet, setEditSet] = useState<CardSet | null>(null);
+  const [loadingEdit, setLoadingEdit] = useState(!!editId);
 
-  const [setName, setSetName] = useState(editSet?.name ?? '');
+  // isCopy = editing a premade/system set → creates a new set, not overwriting
+  // isEdit = editing own user set → updates in place
+  const [isCopy, setIsCopy] = useState(false);
+  const [isEdit, setIsEdit] = useState(false);
+
+  const [setName, setSetName] = useState('');
   const [description, setDescription] = useState('');
-  const [cards, setCards] = useState<CardItem[]>(
-    editSet
-      ? editSet.cards.map(c => ({ ...c }))
-      : [{ id: generateId(), text: '' }, { id: generateId(), text: '' }, { id: generateId(), text: '' }]
-  );
+  const [cards, setCards] = useState<CardItem[]>([
+    { id: generateId(), text: '' },
+    { id: generateId(), text: '' },
+    { id: generateId(), text: '' },
+  ]);
   const [undoStack, setUndoStack] = useState<{ card: CardItem; index: number }[]>([]);
 
   // AI
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Browse panel — only saved sets
-  const [savedIds, setSavedIds] = useState<string[]>([]);
+  // Browse panel — saved sets loaded from backend
+  const [browseSets, setBrowseSets] = useState<CardSet[]>([]);
   const [expandedBrowseId, setExpandedBrowseId] = useState<string | null>(null);
   const [selectedImportCards, setSelectedImportCards] = useState<string[]>([]);
+
+  // Save state
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Import feedback
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
 
-  // Load saved IDs on mount
+  // Load the set being edited + all saved sets for browse panel
   useEffect(() => {
-    loadSavedIds().then(setSavedIds);
-  }, []);
+    const init = async () => {
+      // Load saved sets for the import panel
+      try {
+        const all = await cardSetsApi.list();
+        setBrowseSets(all.filter(s => s.saved));
+      } catch {}
 
-  // Only show sets that are saved
-  const userSets = getUserSets().map(s => ({
-    id: s.id, name: s.name, cards: s.cards, author: 'user',
-  }));
-  const allSets = [
-    ...mockCardSets.map(s => ({ id: s.id, name: s.name, cards: s.cards, author: 'system' })),
-    ...userSets,
-  ];
-  const browseSets = allSets.filter(s => savedIds.includes(s.id));
+      // Load the set being edited if editId provided
+      if (editId) {
+        try {
+          const set = await cardSetsApi.get(editId);
+          if (set) {
+            setEditSet(set);
+            const copy = set.author === 'system';
+            setIsCopy(copy);
+            setIsEdit(!copy);
+            setSetName(set.name);
+            setDescription(set.description ?? '');
+            setCards(set.cards.map(c => ({ ...c })));
+          }
+        } catch {}
+        setLoadingEdit(false);
+      }
+    };
+    init();
+  }, [editId]);
 
   const addCard = () => setCards(prev => [...prev, { id: generateId(), text: '' }]);
 
@@ -127,14 +149,7 @@ export default function CreateCardSet() {
     if (!aiPrompt.trim() || isGenerating) return;
     setIsGenerating(true);
     try {
-      // TODO: POST to /card-sets/generate with { prompt: aiPrompt, count }
-      // const res = await fetch(`${API_URL}/card-sets/generate`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ prompt: aiPrompt, count }),
-      // });
-      // const data = await res.json();
-      // setCards(prev => [...prev, ...data.cards.map((text: string) => ({ id: generateId(), text }))]);
+      // TODO: wire to POST /card-sets/generate
       await new Promise(r => setTimeout(r, 900));
       setCards(prev => [
         ...prev,
@@ -151,22 +166,35 @@ export default function CreateCardSet() {
   const canSave = setName.trim() && cards.some(c => c.text.trim());
 
   const handleSave = async () => {
-    if (!canSave) return;
-    const newId = editId ?? `user-${Date.now()}`;
-    saveUserSet({
-      id: newId,
-      name: setName,
-      description,
-      category: 'Custom',
-      cards: cards.filter(c => c.text.trim()),
-      created_at: new Date().toISOString(),
-    });
-    // Auto-save to Saved tab
-    const existing = await loadSavedIds();
-    if (!existing.includes(newId)) {
-      await saveSavedIds([newId, ...existing]); // prepend so it appears first
+    if (!canSave || saving) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const cleanCards = cards.filter(c => c.text.trim());
+      if (isEdit && editId) {
+        await cardSetsApi.update(editId, {
+          name: setName.trim(),
+          description,
+          category: 'Custom',
+          cards: cleanCards,
+        });
+      } else {
+        await cardSetsApi.create({
+          name: setName.trim() || 'My Deck',
+          description,
+          category: 'Custom',
+          cards: cleanCards,
+          is_public: false,
+        });
+        // Backend auto-adds to saved — no local storage needed
+      }
+      navigate('/facilitator/card-library');
+    } catch (err) {
+      console.error('Failed to save card set:', err);
+      setSaveError('Failed to save. Please try again.');
+    } finally {
+      setSaving(false);
     }
-    navigate('/facilitator/card-library');
   };
 
   const inputStyle: React.CSSProperties = {
@@ -175,6 +203,22 @@ export default function CreateCardSet() {
     fontFamily: 'inherit', boxSizing: 'border-box', transition: 'border-color 0.15s',
     background: 'white',
   };
+
+  const pageTitle = isCopy
+    ? `Copy of "${editSet?.name ?? ''}"`
+    : isEdit ? 'Edit Card Set' : 'New Card Set';
+  const pageSubtitle = isCopy
+    ? 'Creating a new independent copy'
+    : isEdit ? `Editing "${editSet?.name ?? ''}"`
+    : 'Build a custom deck for your sessions';
+
+  if (loadingEdit) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Georgia', serif", color: '#9ca3af' }}>
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'white', fontFamily: "'Georgia', serif" }}>
@@ -185,9 +229,7 @@ export default function CreateCardSet() {
           <button onClick={() => navigate('/facilitator/card-library')} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600, fontFamily: 'inherit' }}>
             <ArrowLeft size={16} /> Card Library
           </button>
-          <p style={{ margin: 0, fontWeight: 800, color: '#1c1917', fontSize: '0.95rem' }}>
-            {editId ? 'Edit Card Set' : 'Create Card Set'}
-          </p>
+          <p style={{ margin: 0, fontWeight: 800, color: '#1c1917', fontSize: '0.95rem' }}>{pageTitle}</p>
           <div style={{ width: 100 }} />
         </div>
       </header>
@@ -198,12 +240,8 @@ export default function CreateCardSet() {
         <div style={{ flex: 3, display: 'flex', flexDirection: 'column', gap: '1.25rem', minWidth: 0 }}>
 
           <div>
-            <h1 style={{ margin: '0 0 4px', fontSize: '2rem', fontWeight: 900, color: '#1c1917', letterSpacing: '-1px' }}>
-              {editId ? 'Edit Card Set' : 'New Card Set'}
-            </h1>
-            <p style={{ margin: 0, color: '#9ca3af', fontSize: '0.88rem' }}>
-              {editId ? `Editing "${editSet?.name ?? ''}"` : 'Build a custom deck for your sessions'}
-            </p>
+            <h1 style={{ margin: '0 0 4px', fontSize: '2rem', fontWeight: 900, color: '#1c1917', letterSpacing: '-1px' }}>{pageTitle}</h1>
+            <p style={{ margin: 0, color: '#9ca3af', fontSize: '0.88rem' }}>{pageSubtitle}</p>
           </div>
 
           {/* Deck Info */}
@@ -214,7 +252,7 @@ export default function CreateCardSet() {
               <input
                 value={setName}
                 onChange={e => setSetName(e.target.value)}
-                placeholder="e.g. Office Icebreakers"
+                placeholder="My Deck"
                 style={inputStyle}
                 onFocus={e => e.currentTarget.style.borderColor = '#4ade80'}
                 onBlur={e => e.currentTarget.style.borderColor = '#e5e7eb'}
@@ -246,22 +284,10 @@ export default function CreateCardSet() {
                 onClick={undoDelete}
                 disabled={undoStack.length === 0}
                 title={undoStack.length > 0 ? `Undo ${undoStack.length} deletion${undoStack.length !== 1 ? 's' : ''}` : 'Nothing to undo'}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  padding: '5px 10px', borderRadius: 8,
-                  border: '1.5px solid #e5e7eb', background: 'white',
-                  color: undoStack.length > 0 ? '#374151' : '#d1d5db',
-                  fontSize: '0.78rem', fontWeight: 700,
-                  cursor: undoStack.length > 0 ? 'pointer' : 'not-allowed',
-                  transition: 'all 0.15s',
-                }}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e5e7eb', background: 'white', color: undoStack.length > 0 ? '#374151' : '#d1d5db', fontSize: '0.78rem', fontWeight: 700, cursor: undoStack.length > 0 ? 'pointer' : 'not-allowed', transition: 'all 0.15s' }}
               >
                 <RotateCcw size={12} color={undoStack.length > 0 ? '#374151' : '#d1d5db'} />
-                Undo {undoStack.length > 0 && (
-                  <span style={{ background: '#f3f4f6', borderRadius: 6, padding: '0px 5px', fontSize: '0.7rem' }}>
-                    {undoStack.length}
-                  </span>
-                )}
+                Undo {undoStack.length > 0 && <span style={{ background: '#f3f4f6', borderRadius: 6, padding: '0px 5px', fontSize: '0.7rem' }}>{undoStack.length}</span>}
               </button>
             </div>
 
@@ -302,13 +328,7 @@ export default function CreateCardSet() {
 
           {/* Bottom actions */}
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,.txt"
-              style={{ display: 'none' }}
-              onChange={handleFileImport}
-            />
+            <input ref={fileInputRef} type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={handleFileImport} />
             <button
               onClick={() => fileInputRef.current?.click()}
               style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '11px 18px', borderRadius: 12, border: '2px solid #e5e7eb', background: 'white', color: '#6b7280', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
@@ -317,29 +337,35 @@ export default function CreateCardSet() {
             >
               <Upload size={15} /> Import CSV / TXT
             </button>
-
             <button
               onClick={handleSave}
-              disabled={!canSave}
-              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px', borderRadius: 14, border: 'none', background: canSave ? '#15803d' : '#e5e7eb', color: canSave ? 'white' : '#9ca3af', fontSize: '0.95rem', fontWeight: 800, cursor: canSave ? 'pointer' : 'not-allowed', boxShadow: canSave ? '0 4px 16px rgba(21,128,61,0.3)' : 'none', transition: 'transform 0.15s, box-shadow 0.15s' }}
-              onMouseEnter={e => { if (canSave) { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(21,128,61,0.4)'; } }}
+              disabled={!canSave || saving}
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px', borderRadius: 14, border: 'none', background: canSave && !saving ? '#15803d' : '#e5e7eb', color: canSave && !saving ? 'white' : '#9ca3af', fontSize: '0.95rem', fontWeight: 800, cursor: canSave && !saving ? 'pointer' : 'not-allowed', boxShadow: canSave ? '0 4px 16px rgba(21,128,61,0.3)' : 'none', transition: 'transform 0.15s, box-shadow 0.15s', opacity: saving ? 0.75 : 1 }}
+              onMouseEnter={e => { if (canSave && !saving) { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(21,128,61,0.4)'; } }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = canSave ? '0 4px 16px rgba(21,128,61,0.3)' : 'none'; }}
             >
-              <Save size={16} /> {editId ? 'Save Changes' : 'Save Card Set'}
+              <Save size={16} />
+              {saving ? 'Saving...' : isEdit ? 'Save Changes' : isCopy ? 'Save as New Deck' : 'Save Card Set'}
             </button>
           </div>
 
+          {saveError && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, background: '#fff5f5', border: '1.5px solid #fca5a5', fontSize: '0.82rem', color: '#b91c1c', fontWeight: 600 }}>
+              {saveError}
+            </div>
+          )}
+
           {importFeedback && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, background: '#f0fdf4', border: '1.5px solid #bbf7d0', fontSize: '0.82rem', color: '#15803d', fontWeight: 600 }}>
-              <Check size={14} color="#15803d" />
-              {importFeedback}
+              <Check size={14} color="#15803d" /> {importFeedback}
             </div>
           )}
         </div>
 
         {/* ── RIGHT ── */}
         <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '1rem', position: 'sticky', top: 80 }}>
-         {/* AI Generation */}
+
+          {/* AI Generation */}
           <div style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', border: '2px solid #bbf7d0', borderRadius: 20, padding: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '0.75rem' }}>
               <div style={{ width: 30, height: 30, borderRadius: 9, background: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -350,7 +376,6 @@ export default function CreateCardSet() {
                 <p style={{ margin: 0, fontSize: '0.72rem', color: '#4b7c5a' }}>Describe your theme, choose how many</p>
               </div>
             </div>
-
             <textarea
               value={aiPrompt}
               onChange={e => setAiPrompt(e.target.value)}
@@ -360,23 +385,13 @@ export default function CreateCardSet() {
               onFocus={e => e.currentTarget.style.borderColor = '#4ade80'}
               onBlur={e => e.currentTarget.style.borderColor = '#e5e7eb'}
             />
-
             <div style={{ display: 'flex', gap: 6 }}>
               {([1, 5, 10] as const).map(count => (
                 <button
                   key={count}
                   onClick={() => handleAIGenerate(count)}
                   disabled={!aiPrompt.trim() || isGenerating}
-                  style={{
-                    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    gap: 2, padding: '9px 6px', borderRadius: 11, border: 'none',
-                    background: aiPrompt.trim() ? '#15803d' : '#e5e7eb',
-                    color: aiPrompt.trim() ? 'white' : '#9ca3af',
-                    fontSize: '0.78rem', fontWeight: 800,
-                    cursor: aiPrompt.trim() && !isGenerating ? 'pointer' : 'not-allowed',
-                    transition: 'transform 0.15s, box-shadow 0.15s',
-                    boxShadow: aiPrompt.trim() ? '0 3px 10px rgba(21,128,61,0.25)' : 'none',
-                  }}
+                  style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, padding: '9px 6px', borderRadius: 11, border: 'none', background: aiPrompt.trim() ? '#15803d' : '#e5e7eb', color: aiPrompt.trim() ? 'white' : '#9ca3af', fontSize: '0.78rem', fontWeight: 800, cursor: aiPrompt.trim() && !isGenerating ? 'pointer' : 'not-allowed', transition: 'transform 0.15s, box-shadow 0.15s', boxShadow: aiPrompt.trim() ? '0 3px 10px rgba(21,128,61,0.25)' : 'none' }}
                   onMouseEnter={e => { if (aiPrompt.trim()) { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 5px 14px rgba(21,128,61,0.35)'; } }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = aiPrompt.trim() ? '0 3px 10px rgba(21,128,61,0.25)' : 'none'; }}
                 >
@@ -391,6 +406,7 @@ export default function CreateCardSet() {
               </p>
             )}
           </div>
+
           {/* Import from Saved Sets */}
           <div style={{ background: 'rgba(255,255,255,0.9)', border: '2px solid rgba(0,0,0,0.07)', borderRadius: 20, padding: '1.25rem', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
             <p style={{ margin: '0 0 4px', fontWeight: 800, fontSize: '0.82rem', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Import from Saved Sets</p>
@@ -407,6 +423,8 @@ export default function CreateCardSet() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {browseSets.map(set => {
                   const isOpen = expandedBrowseId === set.id;
+                  const setCardTexts = set.cards.map(c => c.text);
+                  const allSelected = setCardTexts.every(t => selectedImportCards.includes(t));
                   return (
                     <div key={set.id} style={{ border: '1.5px solid #f0f0f0', borderRadius: 12, overflow: 'hidden', background: 'white' }}>
                       <button
@@ -421,6 +439,18 @@ export default function CreateCardSet() {
                       </button>
                       {isOpen && (
                         <div style={{ borderTop: '1px solid #f0f0f0', padding: '8px' }}>
+                          <button
+                            onClick={() => {
+                              if (allSelected) {
+                                setSelectedImportCards(prev => prev.filter(t => !setCardTexts.includes(t)));
+                              } else {
+                                setSelectedImportCards(prev => [...new Set([...prev, ...setCardTexts])]);
+                              }
+                            }}
+                            style={{ fontSize: '0.7rem', fontWeight: 700, color: allSelected ? '#ef4444' : '#15803d', background: 'none', border: 'none', cursor: 'pointer', padding: '0 0 6px 0', display: 'block' }}
+                          >
+                            {allSelected ? 'Deselect all in set' : 'Select all in set'}
+                          </button>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 200, overflowY: 'auto', marginBottom: selectedImportCards.length > 0 ? 8 : 0 }}>
                             {set.cards.map(card => {
                               const isSelected = selectedImportCards.includes(card.text);
@@ -439,7 +469,10 @@ export default function CreateCardSet() {
                             })}
                           </div>
                           {selectedImportCards.length > 0 && (
-                            <button onClick={importSelected} style={{ width: '100%', padding: '7px', borderRadius: 9, border: 'none', background: '#15803d', color: 'white', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
+                            <button
+                              onClick={importSelected}
+                              style={{ width: '100%', padding: '7px', borderRadius: 9, border: 'none', background: '#15803d', color: 'white', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                            >
                               Import {selectedImportCards.length} card{selectedImportCards.length !== 1 ? 's' : ''}
                             </button>
                           )}

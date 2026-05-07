@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException
-from app.database import games
+from app.database import db, games
 from app.models import GameCreate, PlayerJoin, CardAnswer
 import random
 import string
+from bson import ObjectId
 
 from pydantic import BaseModel
 from typing import List
@@ -81,8 +82,6 @@ async def get_results(lobby_code: str):
         raise HTTPException(status_code=404, detail="Game not found")
 
     answers = game.get("answers", {})
-    card_set_id = game.get("card_set_id")
-
     results = {}
     for player_id, player_answers in answers.items():
         for card_id, answer in player_answers.items():
@@ -95,7 +94,8 @@ async def get_results(lobby_code: str):
 
     return {
         "lobby_code": lobby_code,
-        "card_set_id": card_set_id,
+        "card_set_id": game.get("card_set_id"),
+        "cards": game.get("cards", []),  # ← now included
         "players": game.get("players", []),
         "answers": game.get("answers", {}),
         "results": results,
@@ -120,11 +120,22 @@ async def mark_finished(lobby_code: str, player_id: str):
 
 @router.patch("/{lobby_code}/start")
 async def start_game(lobby_code: str, card_set_id: str, randomize: bool = False):
+    # Fetch the actual cards from the card_sets collection
+    try:
+        card_set = await db["card_sets"].find_one({"_id": ObjectId(card_set_id)})
+    except Exception:
+        card_set = None
+
+    if not card_set:
+        raise HTTPException(status_code=404, detail="Card set not found")
+
     await games.update_one(
         {"lobby_code": lobby_code},
         {"$set": {
             "status": "started",
             "card_set_id": card_set_id,
+            "card_set_name": card_set["name"],
+            "cards": card_set["cards"],
             "randomize_deck": randomize,
         }}
     )

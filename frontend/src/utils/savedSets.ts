@@ -6,9 +6,7 @@ const LOCAL_KEY = 'cg_saved_sets';
 // ── Local (guest) ─────────────────────────────────────────────────────────────
 
 export function getLocalSavedIds(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
-  } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); } catch { return []; }
 }
 
 export function setLocalSavedIds(ids: string[]) {

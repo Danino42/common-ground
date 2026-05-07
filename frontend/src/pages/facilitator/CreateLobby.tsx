@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import { mockCardSets } from '../../data/mockData';
+import { cardSetsApi } from '../../utils/api';
+import type { CardSet } from '../../utils/api';
 import { ArrowLeft, Copy, Play, Users, Check, ChevronDown, Monitor, Shuffle, BarChart2, Smartphone } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import AppBackground from '../AppBackground';
 import { API_URL } from '../../utils/api';
-import { loadSavedIds, } from '../../utils/savedSets';
+import { getLocalSavedIds } from '../../utils/savedSets';
 import { getUser, isLoggedIn } from '../../utils/auth';
 
 const MODE_CONFIG = {
@@ -75,7 +76,6 @@ export default function CreateLobby() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [randomizeDeck, setRandomizeDeck] = useState(false);
-  const [savedIds, setSavedIds] = useState<string[]>([]);
 
   const sessionUser = getUser();
   const guest = !isLoggedIn();
@@ -83,11 +83,6 @@ export default function CreateLobby() {
   const joinUrl = lobbyCode
     ? `${window.location.origin}/player/join?code=${lobbyCode}&mode=${mode}`
     : '';
-
-  // Load saved set IDs
-  useEffect(() => {
-    loadSavedIds().then(setSavedIds);
-  }, []);
 
   // Poll every 3 seconds for new players
   useEffect(() => {
@@ -122,9 +117,26 @@ export default function CreateLobby() {
   };
 
   // Build dropdown options: saved first, then premade, deduped
-  const savedSetIds = new Set(savedIds);
-  const savedSets = mockCardSets.filter(s => savedSetIds.has(s.id));
-  const premadeSets = mockCardSets.filter(s => s.author === 'System' && !savedSetIds.has(s.id));
+  const [allSets, setAllSets] = useState<CardSet[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const sets = await cardSetsApi.list();
+        setAllSets(sets);
+      } catch {}
+    };
+    load();
+  }, []);
+
+  // Then derive saved/premade:
+  const localIds = new Set(getLocalSavedIds());
+  const savedSets = allSets.filter(s =>
+    isLoggedIn() ? s.saved : localIds.has(s.id)
+  );
+  const premadeSets = allSets.filter(s =>
+    s.author === 'system' && !(isLoggedIn() ? s.saved : localIds.has(s.id))
+  );
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '9px 12px', borderRadius: 10,
