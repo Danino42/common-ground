@@ -67,7 +67,7 @@ export default function FacilitatorGame() {
       } catch {}
     };
     fetchResults();
-    const interval = setInterval(fetchResults, 3000);
+    const interval = setInterval(fetchResults, 1000);
     return () => clearInterval(interval);
   }, [lobbyCode]);
 

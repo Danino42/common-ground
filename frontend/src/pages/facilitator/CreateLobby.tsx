@@ -99,9 +99,10 @@ export default function CreateLobby() {
   }, [lobbyCode]);
 
   const handleStartGame = async () => {
+    if (config.hasCardSet && !selectedCardSet) return;
     try {
       await fetch(
-        `${API_URL}/games/${lobbyCode}/start?card_set_id=${selectedCardSet || '1'}&randomize=${randomizeDeck ? 'true' : 'false'}`,
+        `${API_URL}/games/${lobbyCode}/start?card_set_id=${selectedCardSet}&randomize=${randomizeDeck ? 'true' : 'false'}`,
         { method: 'PATCH' }
       );
     } catch {}
@@ -324,13 +325,6 @@ export default function CreateLobby() {
               </div>
             </div>
 
-            {mode === 'circle' && (
-              <div style={{ background: config.bg, border: `1.5px solid ${config.border}`, borderRadius: 16, padding: '1.25rem' }}>
-                <p style={{ margin: 0, fontSize: '0.82rem', color: config.color, fontWeight: 600, lineHeight: 1.6 }}>
-                  In Circle mode, players don't join on their devices. Simply project this screen and go through the cards together as a group.
-                </p>
-              </div>
-            )}
           </div>
 
           {/* RIGHT: Players + Launch */}
@@ -389,15 +383,26 @@ export default function CreateLobby() {
               </div>
             )}
 
-            <div style={{ background: 'rgba(255,255,255,0.85)', border: `1.5px solid ${config.border}`, borderRadius: 20, padding: '1.5rem', boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}>
-              <button
-                onClick={handleStartGame}
+            {mode === 'circle' && (
+            <div style={{ background: config.bg, border: `1.5px solid ${config.border}`, borderRadius: 16, padding: '1.25rem' }}>
+              <p style={{ margin: 0, fontSize: '0.82rem', color: config.color, fontWeight: 600, lineHeight: 1.6 }}>
+                In Circle mode, players don't join on their devices. Simply project this screen and go through the cards together as a group.
+              </p>
+            </div>
+          )}
+          <div style={{ background: 'rgba(255,255,255,0.85)', border: `1.5px solid ${config.border}`, borderRadius: 20, padding: '1.5rem', boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}>
+            <button
+              onClick={handleStartGame}
+                disabled={config.hasCardSet && !selectedCardSet}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                  background: `linear-gradient(135deg, ${config.color} 0%, ${config.accent} 100%)`,
+                  background: config.hasCardSet && !selectedCardSet
+                    ? '#cdced1'
+                    : `linear-gradient(135deg, ${config.color} 0%, ${config.accent} 100%)`,
+                  cursor: config.hasCardSet && !selectedCardSet ? 'not-allowed' : 'pointer',
                   color: 'white', border: 'none', borderRadius: 14,
                   padding: '16px 24px', fontSize: '1rem', fontWeight: 800,
-                  cursor: 'pointer',
+
                   boxShadow: `0 8px 32px ${config.color}44`,
                   transition: 'transform 0.15s',
                 }}

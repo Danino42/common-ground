@@ -12,11 +12,10 @@ interface Props {
 export default function CircleView({ cards }: Props) {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [showCard, setShowCard] = useState(true);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const totalCards = cards.length;
   const currentCard = cards[currentCardIndex];
-
-  const [isAnimating, setIsAnimating] = useState(false);
 
   const nextCard = () => {
     if (currentCardIndex < totalCards - 1 && !isAnimating) {
@@ -72,22 +71,22 @@ export default function CircleView({ cards }: Props) {
 
       {/* Card */}
       <div style={{
-          background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
-          border: '2px solid #fde68a',
-          borderRadius: 24,
-          minHeight: '38vh',
-          width: '100%',
-          maxWidth: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '4rem 8rem',
-          textAlign: 'center',
-          boxShadow: '0 12px 48px rgba(180,83,9,0.1)',
-          opacity: showCard ? 1 : 0,
-          transform: showCard ? 'scale(1)' : 'scale(0.97)',
-          transition: 'opacity 0.3s, transform 0.3s',
-        }}>
+        background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+        border: '2px solid #fde68a',
+        borderRadius: 24,
+        minHeight: '38vh',
+        width: '100%',
+        maxWidth: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '4rem 8rem',
+        textAlign: 'center',
+        boxShadow: '0 12px 48px rgba(180,83,9,0.1)',
+        opacity: showCard ? 1 : 0,
+        transform: showCard ? 'scale(1)' : 'scale(0.97)',
+        transition: 'opacity 0.3s, transform 0.3s',
+      }}>
         <p style={{
           fontSize: 'clamp(1.8rem, 4vw, 3.2rem)',
           fontWeight: 900,
@@ -105,14 +104,14 @@ export default function CircleView({ cards }: Props) {
       <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
         <button
           onClick={previousCard}
-          disabled={currentCardIndex === 0}
+          disabled={currentCardIndex === 0 || isAnimating}
           style={{ ...outlineBtn, opacity: currentCardIndex === 0 ? 0.4 : 1, padding: '12px 24px', fontSize: '0.95rem' }}
         >
           <ArrowLeft size={18} /> Previous
         </button>
         <button
           onClick={nextCard}
-          disabled={currentCardIndex === totalCards - 1}
+          disabled={currentCardIndex === totalCards - 1 || isAnimating}
           style={{ ...primaryBtn, background: 'linear-gradient(135deg, #b45309, #d97706)', opacity: currentCardIndex === totalCards - 1 ? 0.4 : 1, padding: '12px 24px', fontSize: '0.95rem' }}
         >
           Next <ArrowRight size={18} />

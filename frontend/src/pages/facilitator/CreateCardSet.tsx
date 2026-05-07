@@ -10,6 +10,7 @@ import type { CardSet } from '../../utils/api';
 import { isLoggedIn } from '../../utils/auth';
 import { getLocalSavedIds } from '../../utils/savedSets';
 import SessionBadge from '../../components/SessionBadge';
+import { API_URL } from '../../utils/api';
 
 
 
@@ -191,15 +192,24 @@ export default function CreateCardSet() {
     if (!aiPrompt.trim() || isGenerating) return;
     setIsGenerating(true);
     try {
-      // TODO: wire to POST /card-sets/generate
-      await new Promise(r => setTimeout(r, 900));
-      setCards(prev => [
-        ...prev,
-        ...Array.from({ length: count }, (_, i) => ({
-          id: generateId(),
-          text: `Generated card ${i + 1} for: "${aiPrompt}"`,
-        })),
-      ]);
+      const res = await fetch(`${API_URL}/card-sets/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: aiPrompt,
+          count,
+          existing_cards: cards.filter(c => c.text.trim()).map(c => c.text),
+        }),
+      });
+      if (!res.ok) throw new Error('Generation failed');
+      const data = await res.json();
+      const newCards = (data.cards as string[]).map(text => ({
+        id: generateId(),
+        text,
+      }));
+      setCards(prev => [...prev, ...newCards]);
+    } catch (err) {
+      console.error('AI generation failed:', err);
     } finally {
       setIsGenerating(false);
     }

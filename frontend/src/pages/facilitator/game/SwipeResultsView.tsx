@@ -134,7 +134,7 @@ export default function SwipeResultsView({
           ))}
         </div>
         <p style={{ margin: '1rem 0 0', textAlign: 'center', fontSize: '0.78rem', color: '#9ca3af' }}>
-          {total} {total === 1 ? 'response' : 'responses'} · updates every 3s
+          {total} {total === 1 ? 'response' : 'responses'}
         </p>
       </div>
 

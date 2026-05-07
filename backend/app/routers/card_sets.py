@@ -9,6 +9,8 @@ import datetime
 import base64
 import json
 import hashlib
+from openai import AsyncOpenAI
+import os
 
 router = APIRouter()
 security = HTTPBearer(auto_error=False)
@@ -255,3 +257,65 @@ async def unsave_card_set(
         {"$pull": {"saved_card_sets": set_id}},
     )
     return {"status": "unsaved"}
+
+class GenerateRequest(BaseModel):
+    prompt: str
+    count: int = 5
+    existing_cards: list[str] = []
+
+@router.post("/generate")
+async def generate_cards(data: GenerateRequest):
+    if not data.prompt.strip():
+        raise HTTPException(status_code=400, detail="Prompt is required")
+
+    count = max(1, min(data.count, 20))  # clamp between 1 and 20
+
+    client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    system_prompt = """You are helping a facilitator create icebreaker card sets.
+Each card is a short first-person statement that participants respond to with Yes or No.
+Cards should be thought-provoking, inclusive, and spark interesting discussion.
+Keep each statement under 15 words.
+Return ONLY a JSON array of strings, nothing else. Example: ["I have lived in more than one country", "I prefer mornings over evenings"]"""
+
+    existing_context = ""
+    if data.existing_cards:
+        sample = data.existing_cards[:5]
+        existing_context = f"\n\nExisting cards in this deck for style reference:\n" + "\n".join(f"- {c}" for c in sample)
+
+    user_prompt = f"Generate exactly {count} icebreaker statements about: {data.prompt.strip()}{existing_context}"
+
+    try:
+        response = await client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.8,
+            max_tokens=1000,
+        )
+
+        content = response.choices[0].message.content.strip()
+
+        # Strip markdown code fences if present
+        if content.startswith("```"):
+            content = content.split("```")[1]
+            if content.startswith("json"):
+                content = content[4:]
+            content = content.strip()
+
+        import json
+        cards = json.loads(content)
+
+        if not isinstance(cards, list):
+            raise ValueError("Response is not a list")
+
+        # Ensure all items are strings and trim to count
+        cards = [str(c).strip() for c in cards if str(c).strip()][:count]
+
+        return {"cards": cards}
+
+    except Exception as e:
+        print("OpenAI error:", repr(e))
+        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
