@@ -419,7 +419,7 @@ export default function CreateLobby() {
               <button onClick={() => setShowLeaveConfirm(false)} style={{ flex: 1, padding: '11px', borderRadius: 12, border: '1.5px solid #e5e7eb', background: 'white', color: '#374151', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer' }}>
                 Stay
               </button>
-              <button onClick={() => { window.location.href = '/facilitator/dashboard'; }} style={{ flex: 1, padding: '11px', borderRadius: 12, border: 'none', background: '#ef4444', color: 'white', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}>
+              <button onClick={() => navigate('/facilitator/dashboard')} style={{ flex: 1, padding: '11px', borderRadius: 12, border: 'none', background: '#ef4444', color: 'white', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}>
                 Leave
               </button>
             </div>
