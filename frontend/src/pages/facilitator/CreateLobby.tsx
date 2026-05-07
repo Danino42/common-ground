@@ -78,8 +78,7 @@ export default function CreateLobby() {
   const [randomizeDeck, setRandomizeDeck] = useState(false);
 
   const sessionUser = getUser();
-  const guest = !isLoggedIn();
-
+  
   const joinUrl = lobbyCode
     ? `${window.location.origin}/player/join?code=${lobbyCode}&mode=${mode}`
     : '';

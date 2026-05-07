@@ -10,7 +10,6 @@ import { cardSetsApi } from '../../utils/api';
 import type { CardSet } from '../../utils/api';
 import { isLoggedIn } from '../../utils/auth';
 import { getLocalSavedIds, setLocalSavedIds } from '../../utils/savedSets';
-import { API_URL } from '../../utils/api';
 
 interface CardItem { id: string; text: string; }
 
