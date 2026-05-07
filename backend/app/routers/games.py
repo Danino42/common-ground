@@ -132,6 +132,13 @@ async def start_game(lobby_code: str, card_set_id: str, randomize: bool = False)
     if randomize:
         random.shuffle(cards)
 
+    # Reset all players' finished status when game starts
+    game = await games.find_one({"lobby_code": lobby_code})
+    reset_players = [
+        {**p, "finished": False}
+        for p in game.get("players", [])
+    ]
+
     await games.update_one(
         {"lobby_code": lobby_code},
         {"$set": {
@@ -140,6 +147,8 @@ async def start_game(lobby_code: str, card_set_id: str, randomize: bool = False)
             "card_set_name": card_set["name"],
             "cards": cards,
             "randomize_deck": randomize,
+            "players": reset_players,  # ← reset finished flags
+            "answers": {},  # ← also reset answers
         }}
     )
     return {"status": "started"}
