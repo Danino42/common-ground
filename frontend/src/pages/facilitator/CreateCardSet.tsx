@@ -7,6 +7,9 @@ import {
 import AppBackground from '../AppBackground';
 import { cardSetsApi } from '../../utils/api';
 import type { CardSet } from '../../utils/api';
+import { isLoggedIn } from '../../utils/auth';
+import { getLocalSavedIds } from '../../utils/savedSets';
+
 
 interface CardItem { id: string; text: string; }
 
@@ -64,14 +67,46 @@ export default function CreateCardSet() {
   // Load the set being edited + all saved sets for browse panel
   useEffect(() => {
     const init = async () => {
-      // Load saved sets for the import panel
-      try {
-        const all = await cardSetsApi.list();
-        setBrowseSets(all.filter(s => s.saved));
-      } catch {}
+      const load = async () => {
+      const sets = await cardSetsApi.list();
+      if (!isLoggedIn()) {
+        // Guest created sets
+        const guestIds: string[] = JSON.parse(localStorage.getItem('cg_guest_set_ids') || '[]');
+        const guestFetches = await Promise.all(
+          guestIds.map(id => cardSetsApi.get(id).catch(() => null))
+        );
+        const guestSets = guestFetches.filter((s): s is CardSet => s !== null);
 
-      // Load the set being edited if editId provided
+        // Locally saved sets (premade/community saved via localStorage)
+        const localIds = getLocalSavedIds();
+        const locallySaved = sets.filter(s => localIds.includes(s.id));
+
+        // Combine all, deduplicate by id
+        const combined = [...guestSets, ...locallySaved];
+        const deduped = combined.filter((s, i, arr) => arr.findIndex(x => x.id === s.id) === i);
+        setBrowseSets(deduped);
+      } else {
+        setBrowseSets(sets.filter(s => s.saved));
+      }
+    };
+    load().catch(() => {});
+
       if (editId) {
+        // Check guest sets first
+        const guestSets = JSON.parse(localStorage.getItem('cg_guest_sets') || '[]');
+        const guestMatch = guestSets.find((s: any) => s.id === editId);
+        if (guestMatch) {
+          setEditSet(guestMatch);
+          setIsEdit(true);
+          setIsCopy(false);
+          setSetName(guestMatch.name);
+          setDescription(guestMatch.description ?? '');
+          setCards(guestMatch.cards.map((c: any) => ({ ...c })));
+          setLoadingEdit(false);
+          return;
+        }
+
+        // Otherwise load from backend
         try {
           const set = await cardSetsApi.get(editId);
           if (set) {
@@ -128,11 +163,16 @@ export default function CreateCardSet() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
-      const lines = text
-        .split(/[\n\r]+/)
+      const rawLines = text.split(/[\n\r]+/).map(s => s.trim()).filter(s => s.length > 0);
+
+      // Skip title line if second line is a === separator
+      const startIndex = rawLines.length >= 2 && /^=+$/.test(rawLines[1]) ? 2 : 0;
+      const lines = rawLines
+        .slice(startIndex)
         .flatMap(line => line.split(/[,;]/))
         .map(s => s.trim().replace(/^["']|["']$/g, ''))
         .filter(s => s.length > 0);
+
       if (lines.length === 0) {
         setImportFeedback('No cards found in file.');
         return;
@@ -173,24 +213,23 @@ export default function CreateCardSet() {
       const cleanCards = cards.filter(c => c.text.trim());
       if (isEdit && editId) {
         await cardSetsApi.update(editId, {
-          name: setName.trim(),
-          description,
-          category: 'Custom',
-          cards: cleanCards,
+          name: setName.trim(), description, category: 'Custom', cards: cleanCards,
         });
       } else {
-        await cardSetsApi.create({
+        const result = await cardSetsApi.create({
           name: setName.trim() || 'My Deck',
-          description,
-          category: 'Custom',
-          cards: cleanCards,
-          is_public: false,
+          description, category: 'Custom',
+          cards: cleanCards, is_public: false,
         });
-        // Backend auto-adds to saved — no local storage needed
+        // For guests, store the ID in localStorage so they can see it in My Sets
+        if (!isLoggedIn()) {
+          const guestIds = JSON.parse(localStorage.getItem('cg_guest_set_ids') || '[]');
+          localStorage.setItem('cg_guest_set_ids', JSON.stringify([result.id, ...guestIds]));
+        }
       }
       navigate('/facilitator/card-library');
     } catch (err) {
-      console.error('Failed to save card set:', err);
+      console.error(err);
       setSaveError('Failed to save. Please try again.');
     } finally {
       setSaving(false);

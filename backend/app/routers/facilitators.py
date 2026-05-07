@@ -5,6 +5,7 @@ from app.database import db
 from app.auth import create_token, decode_token, generate_otp
 import datetime
 import os
+from typing import Optional
 
 router = APIRouter()
 security = HTTPBearer(auto_error=False)
@@ -124,14 +125,27 @@ async def verify_otp(data: VerifyOTPRequest):
     )
 
     token = create_token({"sub": data.email})
-    return {"token": token, "email": data.email}
+    return {"token": token, "email": data.email, "username": facilitator.get("username", ""),}
 
 
-@router.get("/me")
-async def get_me(facilitator=Depends(get_current_facilitator)):
+class UpdateProfileRequest(BaseModel):
+    username: Optional[str] = None
+
+@router.patch("/me")
+async def update_me(data: UpdateProfileRequest, facilitator=Depends(get_current_facilitator)):
+    update = {}
+    if data.username is not None:
+        update["username"] = data.username.strip()
+    if update:
+        await db["facilitators"].update_one(
+            {"email": facilitator["email"]},
+            {"$set": update}
+        )
+    updated = await db["facilitators"].find_one({"email": facilitator["email"]})
     return {
-        "email": facilitator["email"],
-        "saved_card_sets": facilitator.get("saved_card_sets", []),
+        "email": updated["email"],
+        "username": updated.get("username", ""),
+        "saved_card_sets": updated.get("saved_card_sets", []),
     }
 
 @router.get("/me/saved-sets")

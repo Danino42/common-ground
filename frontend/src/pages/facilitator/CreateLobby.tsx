@@ -123,15 +123,30 @@ export default function CreateLobby() {
     const load = async () => {
       try {
         const sets = await cardSetsApi.list();
-        setAllSets(sets);
+        // For guests, also fetch their sets by ID from localStorage
+        if (!isLoggedIn()) {
+          const guestIds: string[] = JSON.parse(localStorage.getItem('cg_guest_set_ids') || '[]');
+          const guestFetches = await Promise.all(
+            guestIds.map(id => cardSetsApi.get(id).catch(() => null))
+          );
+          const guestSets = guestFetches.filter((s): s is CardSet => s !== null);
+          setAllSets([...guestSets, ...sets]);
+        } else {
+          setAllSets(sets);
+        }
       } catch {}
     };
     load();
   }, []);
 
-  // Then derive saved/premade:
   const localIds = new Set(getLocalSavedIds());
-  const savedSets = allSets.filter(s =>
+  const guestSets: CardSet[] = !isLoggedIn()
+    ? JSON.parse(localStorage.getItem('cg_guest_sets') || '[]')
+    : [];
+
+  const allAvailable = [...guestSets, ...allSets];
+
+  const savedSets = allAvailable.filter(s =>
     isLoggedIn() ? s.saved : localIds.has(s.id)
   );
   const premadeSets = allSets.filter(s =>
@@ -169,7 +184,7 @@ export default function CreateLobby() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {/* Logged in indicator */}
             <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#991b1b' }}>
-              {guest ? 'Guest session' : `Logged in as ${sessionUser?.email?.slice(0, 5)}...`}
+              {`Logged in as ${sessionUser?.username || sessionUser?.email?.slice(0, 5)}`}
             </span>
 
             <div style={{

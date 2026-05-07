@@ -68,6 +68,15 @@ class CardSetUpdate(BaseModel):
 def serialize(doc: dict) -> dict:
     doc["id"] = str(doc["_id"])
     del doc["_id"]
+    # Ensure author_display is always present
+    if not doc.get("author_display"):
+        email = doc.get("author_email", "")
+        if doc.get("author") == "guest":
+            doc["author_display"] = "guest"
+        elif email:
+            doc["author_display"] = email[:5]
+        else:
+            doc["author_display"] = "user"
     return doc
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -129,8 +138,16 @@ async def get_card_set(set_id: str):
 @router.post("/")
 async def create_card_set(
     data: CardSetCreate,
-    email: Optional[str] = Depends(get_facilitator_email)
+    email: Optional[str] = Depends(get_facilitator_email),
+    auto_save: bool = True,
 ):
+    # Fetch username if logged in
+    display_name = None
+    if email:
+        facilitator = await db["facilitators"].find_one({"email": email})
+        if facilitator:
+            display_name = facilitator.get("username") or email[:5]
+
     cards_list = [c.dict() for c in data.cards]
     deck_hash = generate_deck_hash(data.name, cards_list)
 
@@ -140,8 +157,9 @@ async def create_card_set(
         "description": data.description,
         "cards": cards_list,
         "is_public": data.is_public,
-        "author": "system" if not email else "user",
+        "author": "user" if email else "guest",
         "author_email": email,
+        "author_display": display_name or "guest",  # ← add this
         "deck_hash": deck_hash,
         "created_at": datetime.datetime.utcnow().isoformat(),
     }
@@ -149,8 +167,7 @@ async def create_card_set(
     doc["id"] = str(result.inserted_id)
     del doc["_id"]
 
-    # Auto-save to facilitator's saved list if authenticated
-    if email:
+    if email and auto_save:
         await db["facilitators"].update_one(
             {"email": email},
             {"$addToSet": {"saved_card_sets": doc["id"]}},

@@ -113,7 +113,7 @@ export default function FacilitatorDashboard() {
             </div>
             <div className="flex items-center gap-3">
               <p style={{ fontWeight: 600, fontSize: '0.83rem', color: 'darkred', margin: 0 }}>
-                {isGuest ? 'Guest session' : `Logged in as ${sessionUser?.email?.slice(0, 5)}...`}
+                {isGuest ? 'Guest session' : `Logged in as ${sessionUser?.username || sessionUser?.email?.slice(0, 5)}`}
               </p>
               <Link to="/facilitator/profile">
                 <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, border: '1.5px solid #e5e7eb', background: 'white', fontSize: '0.83rem', fontWeight: 600, color: '#374151', cursor: 'pointer' }}>

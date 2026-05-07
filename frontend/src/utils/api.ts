@@ -23,6 +23,7 @@ export interface CardSet {
   cards: CardItem[];
   author: string;
   author_email?: string;
+  author_display?: string;
   is_public: boolean;
   saved: boolean;
   deck_hash: string;
@@ -44,12 +45,13 @@ export const cardSetsApi = {
 
   create: async (data: {
     name: string; category: string; description: string;
-    cards: CardItem[]; is_public: boolean;
+    cards: CardItem[]; is_public: boolean; auto_save?: boolean;
   }): Promise<CardSet> => {
-    const res = await fetch(`${API_URL}/card-sets/`, {
+    const { auto_save = true, ...body } = data;
+    const res = await fetch(`${API_URL}/card-sets/?auto_save=${auto_save}`, {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify(data),
+      body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error('Failed to create card set');
     return res.json();

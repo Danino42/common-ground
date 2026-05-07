@@ -50,7 +50,7 @@ export default function FacilitatorLogin() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Invalid code');
-      saveSession(data.token, { email: data.email });
+      saveSession(data.token, { email: data.email, username: data.username ?? '' });
       navigate('/facilitator/dashboard');
     } catch (err: any) {
       setError(err.message);

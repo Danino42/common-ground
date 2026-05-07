@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import {
   ArrowLeft, Plus, Bookmark, BookmarkCheck, Search,
-  ChevronDown, ChevronUp, Pencil, Trash2, Save, RotateCcw, X, Globe, SlidersHorizontal
+  ChevronDown, ChevronUp, Pencil, Trash2, Save, RotateCcw,
+  X, Globe, SlidersHorizontal, Download, Copy
 } from 'lucide-react';
 import AppBackground from '../AppBackground';
 import { cardSetsApi } from '../../utils/api';
 import type { CardSet } from '../../utils/api';
 import { isLoggedIn } from '../../utils/auth';
 import { getLocalSavedIds, setLocalSavedIds } from '../../utils/savedSets';
+import { API_URL } from '../../utils/api';
 
 interface CardItem { id: string; text: string; }
 
@@ -19,6 +21,7 @@ interface CardSetItem {
   cards: CardItem[];
   author: string;
   author_email?: string;
+  author_display?: string;
   is_public: boolean;
   saved: boolean;
   source?: 'premade' | 'community' | 'mine';
@@ -46,7 +49,10 @@ function apiSetToItem(s: CardSet): CardSetItem {
     category: s.category,
     cards: s.cards,
     author: s.author,
-    author_email: s.author_email ? s.author_email.slice(0, 5) : undefined,
+    author_email: s.author_email
+      ? s.author_email.slice(0, 5)
+      : s.author === 'guest' ? 'guest' : undefined,
+    author_display: s.author_display,
     is_public: s.is_public,
     saved: s.saved,
     deck_hash: s.deck_hash,
@@ -81,7 +87,7 @@ function PreviewModal({ set, onClose }: { set: CardSetItem; onClose: () => void 
             </p>
             <h2 style={{ margin: '0 0 2px', fontWeight: 900, fontSize: '1.2rem', color: '#1c1917', textAlign: 'center' }}>{set.name}</h2>
             <p style={{ margin: '0 0 8px', fontSize: '0.78rem', color: '#9ca3af', textAlign: 'center' }}>
-              {set.author === 'system' ? 'Premade' : `by ${set.author_email?.slice(0, 5) ?? set.author}...`}
+              {set.author === 'system' ? 'Premade' : set.author === 'guest' ? 'by guest' : `by ${set.author_display ?? set.author_email ?? 'user'}`}
             </p>
             {set.deck_hash && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 10px' }}>
@@ -135,8 +141,7 @@ function DeckEditor({ set, onClose, onSave }: { set: CardSetItem; onClose: () =>
     try {
       const sourceId = set.id.replace('saved-', '');
       const updated = await cardSetsApi.update(sourceId, {
-        name,
-        cards: cards.filter(c => c.text.trim()),
+        name, cards: cards.filter(c => c.text.trim()),
       });
       onSave({ ...set, name: updated.name, cards: updated.cards, deck_hash: updated.deck_hash });
       onClose();
@@ -226,23 +231,34 @@ export default function CardLibrary() {
       try {
         const sets = await cardSetsApi.list();
         const items = sets.map(apiSetToItem);
-        setAllSets(items);
+
+        // For guests, also fetch their sets stored by ID in localStorage
+        let guestItems: CardSetItem[] = [];
+        if (!isLoggedIn()) {
+          const guestIds: string[] = JSON.parse(localStorage.getItem('cg_guest_set_ids') || '[]');
+          const guestFetches = await Promise.all(
+            guestIds.map(id => cardSetsApi.get(id).catch(() => null))
+          );
+          guestItems = guestFetches
+            .filter((s): s is CardSet => s !== null)
+            .map(apiSetToItem);
+        }
+
+        const allItems = [...guestItems, ...items];
+        setAllSets(allItems);
         setCommunitySets(
-          items.filter(s => s.is_public && s.author !== 'system' && s.source === 'community')
+          allItems.filter(s => s.is_public && s.author !== 'system')
         );
 
         if (isLoggedIn()) {
-          // Backend returns saved=true for the user's saved sets
-          const saved = sets
-            .filter(s => s.saved)
-            .map(s => makeSavedCopy(apiSetToItem(s)));
+          const saved = sets.filter(s => s.saved).map(s => makeSavedCopy(apiSetToItem(s)));
           setSavedSets(saved);
         } else {
-          // Guest: restore from localStorage
           const localIds = getLocalSavedIds();
-          const saved = items
-            .filter(s => localIds.includes(s.id))
-            .map(makeSavedCopy);
+          // Include guest-created IDs as saved too
+          const guestIds: string[] = JSON.parse(localStorage.getItem('cg_guest_set_ids') || '[]');
+          const allSavedIds = new Set([...localIds, ...guestIds]);
+          const saved = allItems.filter(s => allSavedIds.has(s.id)).map(makeSavedCopy);
           setSavedSets(saved);
         }
       } catch {
@@ -265,8 +281,7 @@ export default function CardLibrary() {
       if (isLoggedIn()) {
         try { await cardSetsApi.unsave(sourceId); } catch {}
       } else {
-        const ids = getLocalSavedIds().filter(id => id !== sourceId);
-        setLocalSavedIds(ids);
+        setLocalSavedIds(getLocalSavedIds().filter(id => id !== sourceId));
       }
     } else {
       setSavedSets(prev => [makeSavedCopy(set), ...prev]);
@@ -278,9 +293,28 @@ export default function CardLibrary() {
     }
   };
 
+  const exportToTxt = (set: CardSetItem) => {
+    const content = [
+      set.name,
+      '='.repeat(set.name.length),
+      '',
+      ...set.cards.map(c => c.text),
+    ].join('\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${set.name.replace(/\s+/g, '_')}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleDeleteSet = async (id: string) => {
     const sourceId = id.replace('saved-', '');
     try { await cardSetsApi.delete(sourceId); } catch {}
+    // Also remove from guest IDs if present
+    const guestIds: string[] = JSON.parse(localStorage.getItem('cg_guest_set_ids') || '[]');
+    localStorage.setItem('cg_guest_set_ids', JSON.stringify(guestIds.filter(i => i !== sourceId)));
     setAllSets(prev => prev.filter(s => s.id !== sourceId));
     setSavedSets(prev => prev.filter(s => s.id !== id && s.id !== `saved-${sourceId}`));
     setDeleteConfirmId(null);
@@ -291,13 +325,13 @@ export default function CardLibrary() {
     const set = allSets.find(s => s.id === sourceId);
     if (!set) { setPublishConfirmId(null); return; }
     try {
-      // Create a clone with is_public: true — original stays in My Sets untouched
       const clone = await cardSetsApi.create({
         name: set.name,
-        category: set.category,
+        category: set.category ?? 'Custom',
         description: '',
         cards: set.cards,
         is_public: true,
+        auto_save: false,
       });
       const cloneItem = apiSetToItem(clone);
       setAllSets(prev => [...prev, cloneItem]);
@@ -307,7 +341,9 @@ export default function CardLibrary() {
   };
 
   const premadeSets = allSets.filter(s => s.author === 'system');
-  const mineSets = allSets.filter(s => s.author === 'user' && !s.is_public);
+  const mineSets = allSets.filter(s =>
+    (s.author === 'user' || s.author === 'guest') && !s.is_public
+  );
 
   const tabSets = (
     activeTab === 'saved'   ? savedSets :
@@ -460,7 +496,8 @@ export default function CardLibrary() {
                         <div style={{ marginBottom: '0.6rem' }}>
                           <p style={{ margin: 0, fontWeight: 800, fontSize: '0.9rem', color: '#1c1917', lineHeight: 1.3 }}>{set.name}</p>
                           <p style={{ margin: '3px 0 0', fontSize: '0.72rem', color: '#9ca3af' }}>
-                            by {set.author_email ?? set.author} · {set.cards.length} cards
+                            by {set.author === 'guest' ? 'guest' : set.author_display ?? set.author_email ?? set.author}
+                            · {set.cards.length} cards
                           </p>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -478,7 +515,7 @@ export default function CardLibrary() {
                         </button>
                         <button
                           onClick={() => toggleSave(set)}
-                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, flex: 1, padding: '7px', borderRadius: 9, border: 'none', background: isSaved ? '#fef9c3' : '#c8956a', color: isSaved ? '#a16207' : 'white', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.15s' }}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, flex: 1, padding: '7px', borderRadius: 9, border: 'none', background: isSaved ? '#fef9c3' : '#dfba6b', color: isSaved ? '#a16207' : 'white', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.15s' }}
                           onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
                           onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                         >
@@ -512,7 +549,8 @@ export default function CardLibrary() {
                 const sourceId = set.id.replace('saved-', '');
                 const isSaved = savedSourceIds.has(sourceId);
                 const isExpanded = expandedId === set.id;
-                const isOwn = set.author === 'user';
+                const isOwn = set.author === 'user' || set.author === 'guest';
+                const isGuestSet = sourceId.startsWith('guest-');
                 return (
                   <div key={set.id} style={{ ...cardStyle, overflow: 'hidden' }}>
                     <div style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -535,6 +573,9 @@ export default function CardLibrary() {
                           {isSaved && activeTab !== 'saved' && (
                             <span style={{ fontSize: '0.67rem', fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>★ Saved</span>
                           )}
+                          {isGuestSet && (
+                            <span style={{ fontSize: '0.67rem', fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: '#fef9c3', color: '#92400e', border: '1px solid #fde68a' }}>Guest</span>
+                          )}
                         </div>
                         <p style={{ margin: '3px 0 0', fontSize: '0.75rem', color: '#9ca3af' }}>
                           {set.cards.length} cards · {set.author === 'system' ? 'Premade' : 'You'}
@@ -552,28 +593,57 @@ export default function CardLibrary() {
                             <Pencil size={12} /> Edit
                           </button>
                         )}
+                        {activeTab === 'saved' && (
+                          <>
+                            {/* Hash copy pill */}
+                            {set.deck_hash && (
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(set.deck_hash!);
+                                }}
+                                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 7, border: '1px solid #e5e7eb', background: '#f9fafb', fontSize: '0.68rem', fontWeight: 700, color: '#9ca3af', cursor: 'pointer', fontFamily: 'monospace', transition: 'all 0.15s' }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.color = '#6b7280'; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = '#9ca3af'; }}
+                                title="Copy deck hash"
+                              >
+                                {set.deck_hash.slice(0, 6)}
+                                <Copy size={10} />
+                              </button>
+                            )}
+                            {/* Export to TXT */}
+                            <button
+                              onClick={() => exportToTxt(set)}
+                              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e5e7eb', background: 'white', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', cursor: 'pointer', transition: 'background 0.15s', whiteSpace: 'nowrap' }}
+                              onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                              title="Export to TXT"
+                            >
+                              <Download size={12} /> Export
+                            </button>
+                          </>
+                        )}
                         {activeTab === 'mine' && isOwn && (
-                        <>
-                          <button
-                            onClick={() => setPublishConfirmId(set.id)}
-                            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 8, border: '1.5px solid #bbf7d0', background: '#f0fdf4', fontSize: '0.78rem', fontWeight: 700, color: '#15803d', cursor: 'pointer', transition: 'background 0.15s', whiteSpace: 'nowrap' }}
-                            onMouseEnter={e => e.currentTarget.style.background = '#dcfce7'}
-                            onMouseLeave={e => e.currentTarget.style.background = '#f0fdf4'}
-                            title="Publish to Community"
-                          >
-                            <Globe size={12} /> Publish
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirmId(set.id)}
-                            style={{ width: 30, height: 30, borderRadius: 8, border: '1.5px solid #fca5a5', background: '#fff5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'transform 0.15s' }}
-                            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
-                            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                            title="Delete deck"
-                          >
-                            <Trash2 size={13} color="#ef4444" />
-                          </button>
-                        </>
-                      )}
+                          <>
+                            <button
+                              onClick={() => setPublishConfirmId(set.id)}
+                              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 8, border: '1.5px solid #bbf7d0', background: '#f0fdf4', fontSize: '0.78rem', fontWeight: 700, color: '#15803d', cursor: 'pointer', transition: 'background 0.15s', whiteSpace: 'nowrap' }}
+                              onMouseEnter={e => e.currentTarget.style.background = '#dcfce7'}
+                              onMouseLeave={e => e.currentTarget.style.background = '#f0fdf4'}
+                              title="Publish to Community"
+                            >
+                              <Globe size={12} /> Publish
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirmId(set.id)}
+                              style={{ width: 30, height: 30, borderRadius: 8, border: '1.5px solid #fca5a5', background: '#fff5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'transform 0.15s' }}
+                              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                              title="Delete deck"
+                            >
+                              <Trash2 size={13} color="#ef4444" />
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => toggleSave(set)}
                           style={{ width: 32, height: 32, borderRadius: 9, border: 'none', background: isSaved ? '#fef9c3' : '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'transform 0.15s' }}
@@ -610,7 +680,10 @@ export default function CardLibrary() {
         <DeckEditor
           set={editingSet}
           onClose={() => setEditingSet(null)}
-          onSave={updated => setSavedSets(prev => prev.map(s => s.id === updated.id ? updated : s))}
+          onSave={updated => {
+            setAllSets(prev => prev.map(s => s.id === updated.id.replace('saved-', '') ? { ...s, name: updated.name, cards: updated.cards } : s));
+            setSavedSets(prev => prev.map(s => s.id === updated.id ? updated : s));
+          }}
         />
       )}
       {previewSet && <PreviewModal set={previewSet} onClose={() => setPreviewSet(null)} />}
@@ -636,6 +709,7 @@ export default function CardLibrary() {
           </div>
         </div>
       )}
+
       {publishConfirmId && (() => {
         const set = allSets.find(s => s.id === publishConfirmId.replace('saved-', ''));
         return (
@@ -652,7 +726,7 @@ export default function CardLibrary() {
                 <div style={{ background: '#f9fafb', border: '1.5px solid #e5e7eb', borderRadius: 12, padding: '0.75rem 1rem', marginBottom: '1.5rem', textAlign: 'center' }}>
                   <p style={{ margin: '0 0 4px', fontWeight: 800, fontSize: '0.88rem', color: '#1c1917' }}>{set.name}</p>
                   <p style={{ margin: 0, fontSize: '0.75rem', color: '#9ca3af' }}>
-                    by {set.author_email?.slice(0, 5) ?? 'user'}... · {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} · {set.cards.length} cards
+                    by {set.author === 'guest' ? 'guest' : set.author_display ?? set.author_email ?? 'user'} · {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} · {set.cards.length} cards
                   </p>
                 </div>
               )}

@@ -29,7 +29,15 @@ export function isLoggedIn(): boolean {
   return !!getToken();
 }
 
+export interface AuthUser {
+  email: string;
+  username?: string;
+  token?: string;
+}
+
 export function authHeaders(): Record<string, string> {
   const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return token
+    ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+    : { 'Content-Type': 'application/json' };
 }
