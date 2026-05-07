@@ -7,7 +7,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import AppBackground from '../AppBackground';
 import { API_URL } from '../../utils/api';
 import { getLocalSavedIds } from '../../utils/savedSets';
-import { getUser, isLoggedIn } from '../../utils/auth';
+import { isLoggedIn } from '../../utils/auth';
 import SessionBadge from '../../components/SessionBadge';
 
 
@@ -78,8 +78,6 @@ export default function CreateLobby() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [randomizeDeck, setRandomizeDeck] = useState(false);
-
-  const sessionUser = getUser();
 
   const joinUrl = lobbyCode
     ? `${window.location.origin}/player/join?code=${lobbyCode}&mode=${mode}`

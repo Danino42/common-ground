@@ -61,7 +61,7 @@ const stepperBtn: React.CSSProperties = {
   flexShrink: 0,
 };
 
-export default function GroupingView({ players, answers, onBack, gameCode }: Props) {
+export default function GroupingView({ players, onBack, gameCode }: Props) {
   const [groupSize, setGroupSize] = useState(3);
   const [method, setMethod] = useState<'random' | 'similarities' | 'opposites'>('random');
   const [groups, setGroups] = useState<Player[][] | null>(null);

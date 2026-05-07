@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { getUser, clearSession, isLoggedIn } from '../../utils/auth';
+import { clearSession, isLoggedIn } from '../../utils/auth';
 import { Play, User, LogOut, Smartphone, BarChart2, Shuffle, Monitor, Library } from 'lucide-react';
 import greenImg from '../../images/green.png';
 import redImg from '../../images/red.png';
@@ -71,7 +71,6 @@ export default function FacilitatorDashboard() {
   const [selectedMode, setSelectedMode] = useState<string | null>('swipe');
   const [isLaunching, setIsLaunching] = useState(false);
 
-  const sessionUser = getUser();
   const isGuest = !isLoggedIn();
 
   const handleLaunch = async () => {
