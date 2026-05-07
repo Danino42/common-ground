@@ -1,7 +1,6 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router';
 import { useDrag } from '@use-gesture/react';
-import { mockCardSets } from '../../data/mockData';
 import AppBackground from '../AppBackground';
 import greenImg from '../../images/green.png';
 import redImg from '../../images/red.png';
@@ -86,8 +85,6 @@ export default function PlayerWaiting() {
   const { gameCode, playerId } = useParams();
 
   const [gameStarted, setGameStarted] = useState(false);
-  const [cardSetId, setCardSetId] = useState<string | null>(null);
-  const [randomizeDeck, setRandomizeDeck] = useState(false);
   const [myGroup, setMyGroup] = useState<{ index: number; color: string } | null>(null);
 
   const [cards, setCards] = useState<{ id: string; text: string }[]>([]);
@@ -128,8 +125,6 @@ export default function PlayerWaiting() {
         const res = await fetch(`${API_URL}/games/${gameCode}`);
         const data = await res.json();
         if (data.status === 'started' && !gameStarted) {
-          setCardSetId(data.card_set_id);
-          setRandomizeDeck(data.randomize_deck || false);
           const rawCards = data.cards || [];
           setCards(data.randomize_deck ? shuffleArray(rawCards) : rawCards);
           setGameStarted(true);

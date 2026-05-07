@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 import { ArrowLeft } from 'lucide-react';
-import { mockCardSets } from '../../../data/mockData';
 import AppBackground from '../../AppBackground';
 import { API_URL } from '../../../utils/api';
 import SwipeResultsView from './SwipeResultsView';
@@ -27,7 +26,6 @@ export default function FacilitatorGame() {
   const mode = searchParams.get('mode') || 'swipe';
 
   const [results, setResults] = useState<Record<string, { yes: number; no: number }>>({});
-  const [cardSetId, setCardSetId] = useState<string>('1');
   const [currentResultIndex, setCurrentResultIndex] = useState(0);
   const [resultsBlurred, setResultsBlurred] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -60,7 +58,7 @@ export default function FacilitatorGame() {
       try {
         const res = await fetch(`${API_URL}/games/${lobbyCode}/results`);
         const data = await res.json();
-        if (data.card_set_id) setCardSetId(data.card_set_id);
+        
         if (data.cards && data.cards.length > 0) setCards(data.cards);
         setResults(data.results || {});
         setPlayers(data.players || []);
