@@ -9,6 +9,8 @@ import { cardSetsApi } from '../../utils/api';
 import type { CardSet } from '../../utils/api';
 import { isLoggedIn } from '../../utils/auth';
 import { getLocalSavedIds } from '../../utils/savedSets';
+import SessionBadge from '../../components/SessionBadge';
+
 
 
 interface CardItem { id: string; text: string; }
@@ -269,7 +271,7 @@ export default function CreateCardSet() {
             <ArrowLeft size={16} /> Card Library
           </button>
           <p style={{ margin: 0, fontWeight: 800, color: '#1c1917', fontSize: '0.95rem' }}>{pageTitle}</p>
-          <div style={{ width: 100 }} />
+          <SessionBadge />
         </div>
       </header>
 

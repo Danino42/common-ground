@@ -8,6 +8,8 @@ import yellowImg from '../../images/yellow.png';
 import AppBackground from '../AppBackground';
 import { SwipeIllustration, ChartIllustration, GroupsIllustration, CircleIllustration } from '../../components/illustrations/GameModeIllustrations';
 import { API_URL } from '../../utils/api';
+import SessionBadge from '../../components/SessionBadge';
+
 
 const GAME_MODES = [
   {
@@ -112,9 +114,7 @@ export default function FacilitatorDashboard() {
               <span style={{ fontWeight: 800, fontSize: '1.15rem', letterSpacing: '-0.5px', color: '#1c1917' }}>Common Ground</span>
             </div>
             <div className="flex items-center gap-3">
-              <p style={{ fontWeight: 600, fontSize: '0.83rem', color: 'darkred', margin: 0 }}>
-                {isGuest ? 'Guest session' : `Logged in as ${sessionUser?.username || sessionUser?.email?.slice(0, 5)}`}
-              </p>
+              <SessionBadge />
               <Link to="/facilitator/profile">
                 <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, border: '1.5px solid #e5e7eb', background: 'white', fontSize: '0.83rem', fontWeight: 600, color: '#374151', cursor: 'pointer' }}>
                   <User size={14} /> Profile

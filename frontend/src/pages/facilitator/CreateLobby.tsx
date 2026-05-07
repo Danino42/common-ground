@@ -8,6 +8,8 @@ import AppBackground from '../AppBackground';
 import { API_URL } from '../../utils/api';
 import { getLocalSavedIds } from '../../utils/savedSets';
 import { getUser, isLoggedIn } from '../../utils/auth';
+import SessionBadge from '../../components/SessionBadge';
+
 
 const MODE_CONFIG = {
   swipe: {
@@ -78,7 +80,7 @@ export default function CreateLobby() {
   const [randomizeDeck, setRandomizeDeck] = useState(false);
 
   const sessionUser = getUser();
-  
+
   const joinUrl = lobbyCode
     ? `${window.location.origin}/player/join?code=${lobbyCode}&mode=${mode}`
     : '';
@@ -101,11 +103,11 @@ export default function CreateLobby() {
   const handleStartGame = async () => {
     try {
       await fetch(
-        `${API_URL}/games/${lobbyCode}/start?card_set_id=${selectedCardSet || '1'}&randomize=${randomizeDeck}`,
+        `${API_URL}/games/${lobbyCode}/start?card_set_id=${selectedCardSet || '1'}&randomize=${randomizeDeck ? 'true' : 'false'}`,
         { method: 'PATCH' }
       );
     } catch {}
-    navigate(`/facilitator/game/${lobbyCode}`);
+    navigate(`/facilitator/game/${lobbyCode}?mode=${mode}`);
   };
 
   const copyLobbyCode = () => {
@@ -182,9 +184,7 @@ export default function CreateLobby() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {/* Logged in indicator */}
-            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#991b1b' }}>
-              {`Logged in as ${sessionUser?.username || sessionUser?.email?.slice(0, 5)}`}
-            </span>
+            <SessionBadge />
 
             <div style={{
               display: 'flex', alignItems: 'center', gap: 8,

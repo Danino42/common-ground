@@ -29,47 +29,26 @@ const GROUP_COLORS = [
   { name: 'Orange', bg: '#fff7ed', border: '#fed7aa', dot: '#f97316', text: '#c2410c' },
 ];
 
-// The solid background colors sent to player screens (need to be vivid, full-screen)
 export const GROUP_BG_COLORS = [
-  '#7c3aed', // Violet
-  '#2563eb', // Sky
-  '#dc2626', // Coral/Red
-  '#16a34a', // Mint/Green
-  '#d97706', // Amber
-  '#db2777', // Pink
-  '#0d9488', // Teal
-  '#ea580c', // Orange
+  '#7c3aed',
+  '#2563eb',
+  '#dc2626',
+  '#16a34a',
+  '#d97706',
+  '#db2777',
+  '#0d9488',
+  '#ea580c',
 ];
 
-function distributeEvenly(total: number, groupSize: number): number[] {
-  const numGroups = Math.ceil(total / groupSize);
-  const base = Math.floor(total / numGroups);
-  const remainder = total % numGroups;
-  return Array.from({ length: numGroups }, (_, i) => base + (i < remainder ? 1 : 0));
-}
-
-function formGroups(players: Player[], groupSize: number): Player[][] {
-  if (players.length === 0) return [];
-  const shuffled = [...players].sort(() => Math.random() - 0.5);
-  const sizes = distributeEvenly(shuffled.length, groupSize);
-  const groups: Player[][] = [];
-  let idx = 0;
-  for (const size of sizes) {
-    groups.push(shuffled.slice(idx, idx + size));
-    idx += size;
-  }
-  return groups;
-}
+const methodOptions: { value: 'random' | 'similarities' | 'opposites'; label: string; description: string }[] = [
+  { value: 'random',       label: 'Random',          description: 'Shuffle players randomly' },
+  { value: 'similarities', label: 'By Similarities', description: 'Group players who agree most' },
+  { value: 'opposites',    label: 'By Opposites',    description: 'Group players who disagree most' },
+];
 
 const purple = '#7c3aed';
 const purpleBg = '#faf5ff';
 const purpleBorder = '#e9d5ff';
-
-const methodOptions: { value: 'random' | 'similarities' | 'opposites'; label: string; soon?: boolean }[] = [
-  { value: 'random',       label: 'Random' },
-  { value: 'similarities', label: 'By Similarities', soon: true },
-  { value: 'opposites',    label: 'By Opposites',    soon: true },
-];
 
 const stepperBtn: React.CSSProperties = {
   width: 32, height: 32, borderRadius: 8,
@@ -82,15 +61,17 @@ const stepperBtn: React.CSSProperties = {
   flexShrink: 0,
 };
 
-export default function GroupingView({ players, answers: _answers, onBack, gameCode }: Props) {
+export default function GroupingView({ players, answers, onBack, gameCode }: Props) {
   const [groupSize, setGroupSize] = useState(3);
   const [method, setMethod] = useState<'random' | 'similarities' | 'opposites'>('random');
   const [groups, setGroups] = useState<Player[][] | null>(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
-  const sizes = distributeEvenly(players.length, groupSize);
-  const groupCount = sizes.length;
-  const sizePreview = [...new Set(sizes)].sort((a, b) => b - a).join(' & ');
+  const numGroups = Math.ceil(players.length / groupSize);
+  const base = Math.floor(players.length / numGroups || 1);
+  const remainder = players.length % (numGroups || 1);
+  const sizePreview = remainder > 0 ? `${base} & ${base + 1}` : `${base}`;
 
   const scaleUp = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.style.transform = 'scale(1.05)';
@@ -101,38 +82,61 @@ export default function GroupingView({ players, answers: _answers, onBack, gameC
     e.currentTarget.style.boxShadow = '0 4px 14px rgba(124,58,237,0.35)';
   };
 
+  const callGenerateGroups = async (m: string, size: number): Promise<Player[][]> => {
+    const res = await fetch(`${API_URL}/games/${gameCode}/generate-groups`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ method: m, group_size: size }),
+    });
+    if (!res.ok) throw new Error('Failed to generate groups');
+    const data = await res.json();
+    // data.groups is array of player_id arrays — map back to Player objects
+    return data.groups.map((group: string[]) =>
+      group.map(pid => players.find(p => p.player_id === pid)!).filter(Boolean)
+    );
+  };
+
+  const saveGroups = async (formed: Player[][]) => {
+    await fetch(`${API_URL}/games/${gameCode}/groups`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groups: formed.map(g => g.map(p => p.player_id)) }),
+    });
+  };
+
   const handleFormGroups = async () => {
-    const formed = formGroups(players, groupSize);
-    setGroups(formed);
+    if (players.length === 0) return;
     setSaving(true);
+    setError('');
     try {
-      await fetch(`${API_URL}/games/${gameCode}/groups`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groups: formed.map(g => g.map(p => p.player_id)) }),
-      });
-    } catch {}
-    setSaving(false);
+      const formed = await callGenerateGroups(method, groupSize);
+      setGroups(formed);
+      await saveGroups(formed);
+    } catch {
+      setError('Failed to form groups. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleReshuffle = async () => {
-    const formed = formGroups(players, groupSize);
-    setGroups(formed);
     setSaving(true);
+    setError('');
     try {
-      await fetch(`${API_URL}/games/${gameCode}/groups`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groups: formed.map(g => g.map(p => p.player_id)) }),
-      });
-    } catch {}
-    setSaving(false);
+      const formed = await callGenerateGroups(method, groupSize);
+      setGroups(formed);
+      await saveGroups(formed);
+    } catch {
+      setError('Failed to re-shuffle. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-      {/* Header — centered */}
+      {/* Header */}
       <div style={{ ...card, display: 'flex', alignItems: 'center', padding: '1rem 1.5rem', position: 'relative' }}>
         <button onClick={onBack} style={{ ...outlineBtn, position: 'absolute', left: '1.5rem' }}>
           <ArrowLeft size={16} /> Results
@@ -147,6 +151,12 @@ export default function GroupingView({ players, answers: _answers, onBack, gameC
           {players.length} players
         </span>
       </div>
+
+      {error && (
+        <div style={{ background: '#fff5f5', border: '1.5px solid #fca5a5', borderRadius: 12, padding: '10px 16px', fontSize: '0.82rem', color: '#b91c1c', fontWeight: 600 }}>
+          {error}
+        </div>
+      )}
 
       {!groups ? (
         <>
@@ -171,7 +181,7 @@ export default function GroupingView({ players, answers: _answers, onBack, gameC
                 >+</button>
               </div>
               <p style={{ margin: '0.6rem 0 0', fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, textAlign: 'center' }}>
-                → {groupCount} group{groupCount !== 1 ? 's' : ''} of {sizePreview}
+                → {numGroups} group{numGroups !== 1 ? 's' : ''} of {sizePreview}
               </p>
             </div>
 
@@ -184,31 +194,30 @@ export default function GroupingView({ players, answers: _answers, onBack, gameC
                   return (
                     <button
                       key={opt.value}
-                      onClick={() => !opt.soon && setMethod(opt.value)}
+                      onClick={() => setMethod(opt.value)}
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '10px 14px', borderRadius: 10,
                         border: isSelected ? `2px solid ${purple}` : '2px solid #e5e7eb',
-                        cursor: opt.soon ? 'default' : 'pointer',
+                        cursor: 'pointer',
                         background: isSelected ? purple : 'white',
-                        color: isSelected ? 'white' : opt.soon ? '#d1d5db' : '#1c1917',
+                        color: isSelected ? 'white' : '#1c1917',
                         fontSize: '0.85rem', fontWeight: 700,
                         boxShadow: isSelected ? '0 4px 14px rgba(124,58,237,0.35)' : '0 1px 3px rgba(0,0,0,0.07)',
                         transition: 'transform 0.15s, box-shadow 0.15s, background 0.15s',
+                        textAlign: 'left',
                       }}
                       onMouseEnter={e => {
-                        if (opt.soon) return;
                         e.currentTarget.style.transform = 'scale(1.03)';
                         e.currentTarget.style.boxShadow = isSelected ? '0 8px 20px rgba(124,58,237,0.45)' : '0 4px 12px rgba(124,58,237,0.2)';
                       }}
                       onMouseLeave={e => {
-                        if (opt.soon) return;
                         e.currentTarget.style.transform = 'scale(1)';
                         e.currentTarget.style.boxShadow = isSelected ? '0 4px 14px rgba(124,58,237,0.35)' : '0 1px 3px rgba(0,0,0,0.07)';
                       }}
                     >
-                      {opt.label}
-                      {opt.soon && <span style={{ fontSize: '0.62rem', fontWeight: 700, background: '#f3f4f6', color: '#9ca3af', padding: '2px 6px', borderRadius: 6 }}>soon</span>}
+                      <span>{opt.label}</span>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 500, opacity: 0.7 }}>{opt.description}</span>
                     </button>
                   );
                 })}
@@ -240,7 +249,7 @@ export default function GroupingView({ players, answers: _answers, onBack, gameC
           {/* Form Groups CTA */}
           <button
             onClick={handleFormGroups}
-            disabled={players.length === 0}
+            disabled={players.length === 0 || saving}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               padding: '16px 24px', borderRadius: 16, border: 'none',
@@ -249,14 +258,15 @@ export default function GroupingView({ players, answers: _answers, onBack, gameC
               cursor: players.length === 0 ? 'not-allowed' : 'pointer',
               boxShadow: players.length === 0 ? 'none' : '0 4px 14px rgba(124,58,237,0.35)',
               transition: 'transform 0.15s, box-shadow 0.15s',
+              opacity: saving ? 0.7 : 1,
             }}
-            onMouseEnter={e => { if (players.length > 0) scaleUp(e); }}
-            onMouseLeave={e => { if (players.length > 0) scaleDown(e); }}
+            onMouseEnter={e => { if (players.length > 0 && !saving) scaleUp(e); }}
+            onMouseLeave={e => { if (players.length > 0 && !saving) scaleDown(e); }}
           >
             <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Users size={18} color="white" />
             </div>
-            {saving ? 'Saving...' : 'Form Groups'}
+            {saving ? 'Forming groups...' : 'Form Groups'}
           </button>
         </>
       ) : (
@@ -303,16 +313,18 @@ export default function GroupingView({ players, answers: _answers, onBack, gameC
             </button>
             <button
               onClick={handleReshuffle}
+              disabled={saving}
               style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                 padding: '13px', borderRadius: 14, border: 'none',
                 background: purple, color: 'white',
-                fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer',
+                fontSize: '0.88rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
                 boxShadow: '0 4px 14px rgba(124,58,237,0.35)',
                 transition: 'transform 0.15s, box-shadow 0.15s',
+                opacity: saving ? 0.7 : 1,
               }}
-              onMouseEnter={e => scaleUp(e)}
-              onMouseLeave={e => scaleDown(e)}
+              onMouseEnter={e => { if (!saving) scaleUp(e); }}
+              onMouseLeave={e => { if (!saving) scaleDown(e); }}
             >
               <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Shuffle size={14} color="white" />

@@ -126,7 +126,7 @@ export default function PlayerWaiting() {
         const data = await res.json();
         if (data.status === 'started' && !gameStarted) {
           const rawCards = data.cards || [];
-          setCards(data.randomize_deck ? shuffleArray(rawCards) : rawCards);
+          setCards(rawCards);
           setGameStarted(true);
         }
         if (data.groups && playerId) {
@@ -148,9 +148,13 @@ export default function PlayerWaiting() {
 
   useEffect(() => {
     if (done && playerId && gameCode) {
-      fetch(`${API_URL}/games/${gameCode}/player/${encodeURIComponent(playerId)}/finished`, {
-        method: 'PATCH',
-      }).catch(() => {});
+      // Small delay to ensure all answer submissions have completed
+      const timer = setTimeout(() => {
+        fetch(`${API_URL}/games/${gameCode}/player/${encodeURIComponent(playerId)}/finished`, {
+          method: 'PATCH',
+        }).catch(() => {});
+      }, 1000);
+      return () => clearTimeout(timer);
     }
   }, [done]);
 

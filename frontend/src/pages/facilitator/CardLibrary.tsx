@@ -10,6 +10,8 @@ import { cardSetsApi } from '../../utils/api';
 import type { CardSet } from '../../utils/api';
 import { isLoggedIn } from '../../utils/auth';
 import { getLocalSavedIds, setLocalSavedIds } from '../../utils/savedSets';
+import SessionBadge from '../../components/SessionBadge';
+
 
 interface CardItem { id: string; text: string; }
 
@@ -385,7 +387,8 @@ export default function CardLibrary() {
       <AppBackground />
 
       <header style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', borderBottom: '2px solid rgba(0,0,0,0.07)', position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 1px 12px rgba(0,0,0,0.06)' }}>
-        <div className="max-w-5xl mx-auto px-6 py-3" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div className="max-w-5xl mx-auto px-6 py-3" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <button onClick={() => navigate('/facilitator/dashboard')} style={{ color: '#9ca3af', display: 'flex', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
             <ArrowLeft size={18} />
           </button>
@@ -393,6 +396,8 @@ export default function CardLibrary() {
             <p style={{ margin: 0, fontWeight: 800, color: '#1c1917', fontSize: '0.95rem' }}>Card Library</p>
             <p style={{ margin: 0, fontSize: '0.72rem', color: '#9ca3af' }}>Manage and browse card sets</p>
           </div>
+          </div>
+          <SessionBadge /> 
         </div>
       </header>
 

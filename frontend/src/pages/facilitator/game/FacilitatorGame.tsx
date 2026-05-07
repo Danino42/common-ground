@@ -6,6 +6,7 @@ import { API_URL } from '../../../utils/api';
 import SwipeResultsView from './SwipeResultsView';
 import CircleView from './CircleView';
 import GroupsView from './GroupsView';
+import SessionBadge from '../../../components/SessionBadge';
 
 const modeColor: Record<string, string> = {
   swipe: '#15803d', circle: '#b45309', random: '#7c3aed', topics: '#0369a1',
@@ -112,6 +113,7 @@ export default function FacilitatorGame() {
               </p>
             </div>
           </div>
+          <SessionBadge />
         </div>
       </header>
 

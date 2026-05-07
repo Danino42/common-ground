@@ -105,7 +105,7 @@ export default function PlayerJoin() {
                 type="text"
                 placeholder="Enter your name"
                 value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
+                onChange={(e) => setPlayerName(e.target.value.replace(/[^a-zA-Z0-9áéíóöőüűÁÉÍÓÖŐÜŰäöüÄÖÜ ]/g, ''))}
                 required
                 style={inputStyle}
                 onFocus={e => e.target.style.borderColor = '#4ade80'}
