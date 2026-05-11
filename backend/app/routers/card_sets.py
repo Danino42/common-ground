@@ -272,11 +272,18 @@ async def generate_cards(data: GenerateRequest):
 
     client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-    system_prompt = """You are helping a facilitator create icebreaker card sets.
-Each card is a short first-person statement that participants respond to with Yes or No.
-Cards should be thought-provoking, inclusive, and spark interesting discussion.
-Keep each statement under 15 words.
-Return ONLY a JSON array of strings, nothing else. Example: ["I have lived in more than one country", "I prefer mornings over evenings"]"""
+    system_prompt = """You are helping a facilitator create card sets for group sessions.
+Each card is a short statement or question that participants respond to with Yes or No.
+Return ONLY a JSON array of strings, nothing else. Example: ["I have lived in more than one country", "Bubble sort has O(n²) worst-case complexity"]
+
+Follow these rules:
+- Match the tone and style of the user's request exactly.
+- If the request is about a technical or academic topic, generate factual true/false style statements suitable for knowledge testing or quizzes.
+- If the request is about personal experiences, lifestyle or social topics, generate first-person icebreaker statements.
+- If the request is vague, generate statements that fit naturally as icebreakers: personal experiences, habits, values, opinions.
+- Keep each statement under 20 words.
+- Vary the statements — avoid repetition in style or topic within the same batch.
+- Never add explanations, prefixes like "Statement:" or numbering — just the raw statements."""
 
     existing_context = ""
     if data.existing_cards:
