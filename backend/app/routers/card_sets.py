@@ -290,7 +290,7 @@ Follow these rules:
         sample = data.existing_cards[:5]
         existing_context = f"\n\nExisting cards in this deck for style reference:\n" + "\n".join(f"- {c}" for c in sample)
 
-    user_prompt = f"Generate exactly {count} icebreaker statements about: {data.prompt.strip()}{existing_context}"
+    user_prompt = f"Generate exactly {count} Yes/No statements for the following request: {data.prompt.strip()}{existing_context}"
 
     try:
         response = await client.chat.completions.create(
