@@ -344,10 +344,10 @@ export default function PlayerWaiting() {
             padding: '0.5rem 2rem 0',
             maxWidth: 360, margin: '0 auto', width: '100%',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: isLeft ? '#ef4444' : '#d1d5db', fontSize: '0.82rem', fontWeight: 700, transition: 'color 0.15s', opacity: isLeft ? 0.6 + swipeProgress * 0.4 : 0.5 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: isLeft ? '#ef4444' : '#374151', fontSize: '0.82rem', fontWeight: 700, transition: 'color 0.15s', opacity: isLeft ? 0.6 + swipeProgress * 0.4 : 0.5 }}>
               <span style={{ fontSize: '1.1rem' }}>←</span> Nope
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: isRight ? '#22c55e' : '#d1d5db', fontSize: '0.82rem', fontWeight: 700, transition: 'color 0.15s', opacity: isRight ? 0.6 + swipeProgress * 0.4 : 0.5 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: isRight ? '#22c55e' : '#374151', fontSize: '0.82rem', fontWeight: 700, transition: 'color 0.15s', opacity: isRight ? 0.6 + swipeProgress * 0.4 : 0.5 }}>
               Yeah <span style={{ fontSize: '1.1rem' }}>→</span>
             </div>
           </div>
