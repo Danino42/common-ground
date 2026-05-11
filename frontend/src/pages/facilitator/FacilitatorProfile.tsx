@@ -65,12 +65,6 @@ export default function FacilitatorProfile() {
           <Link to="/facilitator/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#15803d', fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none' }}>
             <ArrowLeft size={15} /> Back to Dashboard
           </Link>
-          <button
-            onClick={handleLogout}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, border: '1.5px solid #fca5a5', background: '#fff5f5', color: '#b91c1c', fontSize: '0.83rem', fontWeight: 700, cursor: 'pointer' }}
-          >
-            <LogOut size={14} /> {loggedIn ? 'Log Out' : 'Exit'}
-          </button>
         </div>
       </header>
 

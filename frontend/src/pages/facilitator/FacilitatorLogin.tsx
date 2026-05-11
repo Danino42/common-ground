@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
-import { ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import AppBackground from '../AppBackground';
 import greenImg from '../../images/green.png';
 import redImg from '../../images/red.png';
@@ -17,6 +16,8 @@ export default function FacilitatorLogin() {
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // const [joinCode, setJoinCode] = useState('');
 
   const handleRequestOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,10 +87,6 @@ export default function FacilitatorLogin() {
       <AppBackground />
 
       <div style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1 }}>
-
-        <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#15803d', fontWeight: 600, fontSize: '0.9rem', textDecoration: 'none', marginBottom: '1.5rem' }}>
-          <ArrowLeft size={15} /> Back to Home
-        </Link>
 
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
@@ -225,7 +222,53 @@ export default function FacilitatorLogin() {
             </form>
           )}
         </div>
+        {/* Join Game */}
+        {/* <div style={{
+          marginTop: '1.5rem',
+          background: 'rgba(255,255,255,0.9)',
+          border: '1.5px solid rgba(0,0,0,0.07)',
+          borderRadius: 20, padding: '1.75rem 2rem',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+        }}>
+          <h2 style={{ margin: '0 0 0.25rem', fontSize: '1.05rem', fontWeight: 800, color: '#1c1917' }}>Join a Game</h2>
+          <p style={{ margin: '0 0 1.25rem', fontSize: '0.82rem', color: '#9ca3af' }}>Have a code? Jump straight in as a player.</p>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="text"
+              placeholder="Game code"
+              value={joinCode}
+              onChange={e => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+              maxLength={6}
+              style={{
+                flex: 1, padding: '10px 14px', borderRadius: 12,
+                border: '1.5px solid #e5e7eb', fontSize: '1rem',
+                fontWeight: 700, letterSpacing: '0.15em', textAlign: 'center',
+                outline: 'none', fontFamily: 'monospace', color: '#15803d',
+                transition: 'border-color 0.15s',
+              }}
+              onFocus={e => e.currentTarget.style.borderColor = '#4ade80'}
+              onBlur={e => e.currentTarget.style.borderColor = '#e5e7eb'}
+              onKeyDown={e => e.key === 'Enter' && joinCode.length > 0 && navigate(`/player/join?code=${joinCode}`)}
+            />
+            <button
+              onClick={() => navigate(`/player/join?code=${joinCode}`)}
+              disabled={joinCode.length === 0}
+              style={{
+                padding: '10px 20px', borderRadius: 12, border: 'none',
+                background: joinCode.length > 0 ? 'linear-gradient(135deg, #278967 0%, #4ade80 100%)' : '#e5e7eb',
+                color: joinCode.length > 0 ? 'white' : '#9ca3af',
+                fontSize: '0.88rem', fontWeight: 700,
+                cursor: joinCode.length > 0 ? 'pointer' : 'not-allowed',
+                transition: 'all 0.15s', whiteSpace: 'nowrap',
+                boxShadow: joinCode.length > 0 ? '0 4px 12px rgba(21,128,61,0.25)' : 'none',
+              }}
+            >
+              Join →
+            </button>
+          </div>
+        </div> */}
       </div>
+      
     </div>
   );
 }

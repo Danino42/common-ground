@@ -1,5 +1,4 @@
-import { Routes, Route } from 'react-router'
-import Home from './pages/Home'
+import { Routes, Route, Navigate } from 'react-router'
 import FacilitatorLogin from './pages/facilitator/FacilitatorLogin'
 import FacilitatorDashboard from './pages/facilitator/FacilitatorDashboard'
 import FacilitatorGame from './pages/facilitator/game/FacilitatorGame'
@@ -16,7 +15,7 @@ import PlayerWaiting from './pages/player/PlayerWaiting'
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<Navigate to="/facilitator/login" replace />} />
       <Route path="/facilitator/login" element={<FacilitatorLogin />} />
       <Route path="/facilitator/dashboard" element={<FacilitatorDashboard />} />
       <Route path="/facilitator/game/:lobbyCode" element={<FacilitatorGame />} />

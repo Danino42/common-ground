@@ -8,6 +8,7 @@ import {
 import AppBackground from '../AppBackground';
 import { cardSetsApi } from '../../utils/api';
 import type { CardSet } from '../../utils/api';
+import { API_URL } from '../../utils/api';
 import { isLoggedIn } from '../../utils/auth';
 import { getLocalSavedIds, setLocalSavedIds } from '../../utils/savedSets';
 import SessionBadge from '../../components/SessionBadge';
@@ -374,6 +375,7 @@ export default function CardLibrary() {
     transition: 'transform 0.15s, box-shadow 0.15s',
   };
 
+
   if (loadingSession) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Georgia', serif", color: '#9ca3af' }}>
@@ -412,10 +414,42 @@ export default function CardLibrary() {
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'rgba(255,255,255,0.65)' }}>Build manually or generate cards with AI</p>
           </div>
           <div style={{ display: 'flex', gap: 10, flexShrink: 0, position: 'relative', zIndex: 2 }}>
-            <button onClick={() => navigate('/facilitator/create-card-set')} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px', borderRadius: 14, border: 'none', background: 'white', color: '#15803d', fontSize: '0.88rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,0,0,0.15)', transition: 'transform 0.15s, box-shadow 0.15s' }} onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.15)'; }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Plus size={16} color="white" /></div>
-              Build a New Deck
-            </button>
+            <div style={{ display: 'flex', gap: 10, flexShrink: 0, position: 'relative', zIndex: 2 }}>
+              <button
+                onClick={async () => {
+                    try {
+                      const res = await fetch(`${API_URL}/games/create?facilitator_email=guest@example.com`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ card_set_id: '1', max_players: 50 }),
+                      });
+                      const data = await res.json();
+                      navigate(`/facilitator/create-lobby?mode=swipe&code=${data.lobby_code}`);
+                    } catch {
+                      navigate('/facilitator/create-lobby?mode=swipe');
+                    }
+                  }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px', borderRadius: 14, border: '2px solid rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.15)', color: 'white', fontSize: '0.88rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,0,0,0.1)', transition: 'transform 0.15s, background 0.15s', backdropFilter: 'blur(4px)' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
+              >
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  ▶
+                </div>
+                Quick Launch Swipe
+              </button>
+               <button
+                onClick={() => navigate('/facilitator/create-card-set')}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px', borderRadius: 14, border: 'none', background: 'white', color: '#15803d', fontSize: '0.88rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,0,0,0.15)', transition: 'transform 0.15s, box-shadow 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.15)'; }}
+              >
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Plus size={16} color="white" />
+                </div>
+                Build a New Deck
+              </button>
+            </div>
           </div>
         </div>
 

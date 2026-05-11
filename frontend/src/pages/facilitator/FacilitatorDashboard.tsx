@@ -280,6 +280,51 @@ export default function FacilitatorDashboard() {
                   {isSelected && !mode.unavailable && (
                     <div style={{ position: 'absolute', top: 10, right: 10, width: 20, height: 20, borderRadius: '50%', background: mode.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', color: 'white', fontWeight: 900 }}>✓</div>
                   )}
+                  {!mode.unavailable && (
+                    <button
+                      onClick={async e => {
+                        e.stopPropagation();
+                        setIsLaunching(true);
+                        try {
+                          const res = await fetch(`${API_URL}/games/create?facilitator_email=guest@example.com`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ card_set_id: '1', max_players: 30 }),
+                          });
+                          const data = await res.json();
+                          navigate(`/facilitator/create-lobby?mode=${mode.id}&code=${data.lobby_code}`);
+                        } catch {
+                          navigate(`/facilitator/create-lobby?mode=${mode.id}`);
+                        } finally {
+                          setIsLaunching(false);
+                        }
+                      }}
+                      style={{
+                        marginTop: '0.75rem',
+                        width: '100%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        padding: '8px 12px', borderRadius: 10, border: 'none',
+                        background: isSelected ? mode.color : '#f3f4f6',
+                        color: isSelected ? 'white' : '#9ca3af',
+                        fontSize: '0.78rem', fontWeight: 800,
+                        cursor: 'pointer',
+                        boxShadow: isSelected ? `0 4px 12px ${mode.color}44` : 'none',
+                        transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = mode.color;
+                        e.currentTarget.style.color = 'white';
+                        e.currentTarget.style.boxShadow = `0 4px 12px ${mode.color}44`;
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = isSelected ? mode.color : '#f3f4f6';
+                        e.currentTarget.style.color = isSelected ? 'white' : '#9ca3af';
+                        e.currentTarget.style.boxShadow = isSelected ? `0 4px 12px ${mode.color}44` : 'none';
+                      }}
+                    >
+                      <Play size={12} fill="currentColor" /> Play
+                    </button>
+                  )}
                 </div>
               );
             })}
