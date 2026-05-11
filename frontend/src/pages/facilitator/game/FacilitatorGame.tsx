@@ -5,7 +5,7 @@ import AppBackground from '../../AppBackground';
 import { API_URL } from '../../../utils/api';
 import SwipeResultsView from './SwipeResultsView';
 import CircleView from './CircleView';
-import GroupsView from './GroupsView';
+import GroupingView from './GroupingView';
 import SessionBadge from '../../../components/SessionBadge';
 
 const modeColor: Record<string, string> = {
@@ -139,7 +139,15 @@ export default function FacilitatorGame() {
             setResultsBlurred={setResultsBlurred}
           />
         )}
-        {mode === 'random' && <GroupsView />}
+        {mode === 'random' && (
+          <GroupingView
+            players={players}
+            answers={playerAnswers}
+            onBack={() => {}}
+            gameCode={lobbyCode!}
+            mode="random"
+          />
+        )}
       </main>
       {showLeaveConfirm && (
                 <div style={{

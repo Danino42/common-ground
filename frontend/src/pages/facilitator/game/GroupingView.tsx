@@ -16,6 +16,7 @@ interface Props {
   answers: Record<string, Record<string, boolean>>;
   onBack: () => void;
   gameCode: string;
+  mode?: 'swipe' | 'random';
 }
 
 const GROUP_COLORS = [
@@ -40,12 +41,6 @@ export const GROUP_BG_COLORS = [
   '#ea580c',
 ];
 
-const methodOptions: { value: 'random' | 'similarities' | 'opposites'; label: string; description: string }[] = [
-  { value: 'random',       label: 'Random',          description: 'Shuffle players randomly' },
-  { value: 'similarities', label: 'By Similarities', description: 'Group players who agree most' },
-  { value: 'opposites',    label: 'By Opposites',    description: 'Group players who disagree most' },
-];
-
 const purple = '#7c3aed';
 const purpleBg = '#faf5ff';
 const purpleBorder = '#e9d5ff';
@@ -61,12 +56,18 @@ const stepperBtn: React.CSSProperties = {
   flexShrink: 0,
 };
 
-export default function GroupingView({ players, onBack, gameCode }: Props) {
+export default function GroupingView({ players, onBack, gameCode, mode = 'swipe' }: Props) {
   const [groupSize, setGroupSize] = useState(3);
   const [method, setMethod] = useState<'random' | 'similarities' | 'opposites'>('random');
   const [groups, setGroups] = useState<Player[][] | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const methodOptions: { value: 'random' | 'similarities' | 'opposites'; label: string; description: string; disabled?: boolean }[] = [
+  { value: 'random',       label: 'Random',          description: 'Shuffle players randomly' },
+  { value: 'similarities', label: 'By Similarities', description: 'Group players who agree most',    disabled: mode === 'random' },
+  { value: 'opposites',    label: 'By Opposites',    description: 'Group players who disagree most', disabled: mode === 'random' },
+];
 
   const numGroups = Math.ceil(players.length / groupSize);
   const base = Math.floor(players.length / numGroups || 1);
@@ -138,9 +139,11 @@ export default function GroupingView({ players, onBack, gameCode }: Props) {
 
       {/* Header */}
       <div style={{ ...card, display: 'flex', alignItems: 'center', padding: '1rem 1.5rem', position: 'relative' }}>
-        <button onClick={onBack} style={{ ...outlineBtn, position: 'absolute', left: '1.5rem' }}>
-          <ArrowLeft size={16} /> Results
-        </button>
+        {mode === 'swipe' && (
+            <button onClick={onBack} style={{ ...outlineBtn, position: 'absolute', left: '1.5rem' }}>
+              <ArrowLeft size={16} /> Results
+            </button>
+          )}
         <div style={{ flex: 1, textAlign: 'center' }}>
           <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 800, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Form Groups</p>
           <p style={{ margin: '2px 0 0', fontWeight: 900, color: '#1c1917', fontSize: '1.1rem' }}>
@@ -194,24 +197,27 @@ export default function GroupingView({ players, onBack, gameCode }: Props) {
                   return (
                     <button
                       key={opt.value}
-                      onClick={() => setMethod(opt.value)}
+                      onClick={() => !opt.disabled && setMethod(opt.value)}
                       style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '10px 14px', borderRadius: 10,
                         border: isSelected ? `2px solid ${purple}` : '2px solid #e5e7eb',
-                        cursor: 'pointer',
-                        background: isSelected ? purple : 'white',
-                        color: isSelected ? 'white' : '#1c1917',
+                        cursor: opt.disabled ? 'not-allowed' : 'pointer',
+                        background: opt.disabled ? '#f9fafb' : isSelected ? purple : 'white',
+                        color: opt.disabled ? '#d1d5db' : isSelected ? 'white' : '#1c1917',
+                        opacity: opt.disabled ? 0.6 : 1,
                         fontSize: '0.85rem', fontWeight: 700,
                         boxShadow: isSelected ? '0 4px 14px rgba(124,58,237,0.35)' : '0 1px 3px rgba(0,0,0,0.07)',
                         transition: 'transform 0.15s, box-shadow 0.15s, background 0.15s',
                         textAlign: 'left',
                       }}
                       onMouseEnter={e => {
+                        if (opt.disabled) return;
                         e.currentTarget.style.transform = 'scale(1.03)';
                         e.currentTarget.style.boxShadow = isSelected ? '0 8px 20px rgba(124,58,237,0.45)' : '0 4px 12px rgba(124,58,237,0.2)';
                       }}
                       onMouseLeave={e => {
+                        if (opt.disabled) return;
                         e.currentTarget.style.transform = 'scale(1)';
                         e.currentTarget.style.boxShadow = isSelected ? '0 4px 14px rgba(124,58,237,0.35)' : '0 1px 3px rgba(0,0,0,0.07)';
                       }}

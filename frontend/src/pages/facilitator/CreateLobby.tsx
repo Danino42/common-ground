@@ -68,8 +68,11 @@ export default function CreateLobby() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const codeFromUrl = searchParams.get('code');
-  const mode = (searchParams.get('mode') || 'swipe') as keyof typeof MODE_CONFIG;
-  const config = MODE_CONFIG[mode] || MODE_CONFIG.swipe;
+  
+  const modeParam = searchParams.get('mode') || 'swipe';
+  const mode = (modeParam in MODE_CONFIG ? modeParam : 'swipe') as keyof typeof MODE_CONFIG;
+  const config = MODE_CONFIG[mode];
+  const isRandom = modeParam === 'random';
 
   const [selectedCardSet, setSelectedCardSet] = useState('');
   const [groupSize, setGroupSize] = useState('5');
@@ -201,7 +204,7 @@ export default function CreateLobby() {
           <p style={{ color: '#78716c', marginTop: 6, fontSize: '1rem' }}>{config.sub}</p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: config.hasJoin ? '1fr 1fr 1fr' : '1fr 1fr', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isRandom ? '1fr 1fr' : config.hasJoin ? '1fr 1fr 1fr' : '1fr 1fr', gap: '1.5rem' }}>
 
           {/* LEFT: QR + Code */}
           {config.hasJoin && (
@@ -259,7 +262,7 @@ export default function CreateLobby() {
           )}
 
           {/* MIDDLE: Settings */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {!isRandom && <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
             {config.hasCardSet && (
               <div style={{ background: 'rgba(255,255,255,0.85)', border: `1.5px solid ${config.border}`, borderRadius: 20, padding: '1.5rem', boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}>
@@ -319,7 +322,7 @@ export default function CreateLobby() {
               </div>
             </div>
 
-          </div>
+          </div>}
 
           {/* RIGHT: Players + Launch */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -404,7 +407,7 @@ export default function CreateLobby() {
                 onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
               >
                 <Play size={18} fill="currentColor" />
-                Start Game
+                Form Groups
               </button>
               {mode === 'circle' && (
                 <p style={{ margin: '0.75rem 0 0', fontSize: '0.75rem', color: '#9ca3af', textAlign: 'center' }}>

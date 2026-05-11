@@ -51,7 +51,7 @@ const GAME_MODES = [
     tag: 'Quick Setup',
     tagColor: '#7c3aed',
     tagBg: '#ede9fe',
-    unavailable: true,
+    unavailable: false,
   },
   {
     id: 'circle',
