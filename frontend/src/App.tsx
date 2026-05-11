@@ -6,8 +6,6 @@ import FacilitatorProfile from './pages/facilitator/FacilitatorProfile'
 import CreateLobby from './pages/facilitator/CreateLobby'
 import CardLibrary from './pages/facilitator/CardLibrary';
 import CreateCardSet from './pages/facilitator/CreateCardSet'
-import CreateCardSetAI from './pages/facilitator/CreateCardSetAI'
-import BrowseCardSets from './pages/facilitator/BrowseCardSets'
 import PlayerGroupPhase from './pages/player/PlayerGroupPhase'
 import PlayerJoin from './pages/player/PlayerJoin'
 import PlayerWaiting from './pages/player/PlayerWaiting'
@@ -23,8 +21,6 @@ export default function App() {
       <Route path="/facilitator/create-lobby" element={<CreateLobby />} />
       <Route path="/facilitator/card-library" element={<CardLibrary />} />
       <Route path="/facilitator/create-card-set" element={<CreateCardSet />} />
-      <Route path="/facilitator/create-card-set-ai" element={<CreateCardSetAI />} />
-      <Route path="/facilitator/browse-card-sets" element={<BrowseCardSets />} />
       <Route path="/player/join" element={<PlayerJoin />} />
       <Route path="/player/group-phase" element={<PlayerGroupPhase />} />
       <Route path="/player/waiting/:gameCode/:playerId" element={<PlayerWaiting />} />
