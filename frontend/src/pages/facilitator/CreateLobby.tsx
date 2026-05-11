@@ -407,7 +407,7 @@ export default function CreateLobby() {
                 onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
               >
                 <Play size={18} fill="currentColor" />
-                Form Groups
+                Start Game
               </button>
               {mode === 'circle' && (
                 <p style={{ margin: '0.75rem 0 0', fontSize: '0.75rem', color: '#9ca3af', textAlign: 'center' }}>
