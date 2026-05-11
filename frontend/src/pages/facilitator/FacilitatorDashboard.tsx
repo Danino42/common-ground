@@ -10,7 +10,6 @@ import { SwipeIllustration, ChartIllustration, GroupsIllustration, CircleIllustr
 import { API_URL } from '../../utils/api';
 import SessionBadge from '../../components/SessionBadge';
 
-
 const GAME_MODES = [
   {
     id: 'swipe',
@@ -24,6 +23,7 @@ const GAME_MODES = [
     tag: 'Individual → Groups',
     tagColor: '#15803d',
     tagBg: '#dcfce7',
+    unavailable: false,
   },
   {
     id: 'topics',
@@ -37,6 +37,7 @@ const GAME_MODES = [
     tag: 'Live Statistics',
     tagColor: '#0369a1',
     tagBg: '#e0f2fe',
+    unavailable: true,
   },
   {
     id: 'random',
@@ -50,6 +51,7 @@ const GAME_MODES = [
     tag: 'Quick Setup',
     tagColor: '#7c3aed',
     tagBg: '#ede9fe',
+    unavailable: true,
   },
   {
     id: 'circle',
@@ -63,6 +65,7 @@ const GAME_MODES = [
     tag: 'Fully Offline',
     tagColor: '#b45309',
     tagBg: '#fef3c7',
+    unavailable: false,
   },
 ];
 
@@ -97,47 +100,39 @@ export default function FacilitatorDashboard() {
 
       {/* Header */}
       <header style={{
-          background: 'rgba(255,255,255,0.75)',
-          backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid rgba(0,0,0,0.07)',
-          position: 'sticky', top: 0, zIndex: 50,
-          boxShadow: '0 2px 16px rgba(0,0,0,0.05)'
-        }}>
-          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <img src={redImg} alt="" style={{ width: 22, height: 22, transform: 'rotate(-5deg)' }} />
-                <img src={yellowImg} alt="" style={{ width: 22, height: 22 }} />
-                <img src={greenImg} alt="" style={{ width: 22, height: 22, transform: 'rotate(5deg)' }} />
-              </div>
-              <span style={{ fontWeight: 800, fontSize: '1.15rem', letterSpacing: '-0.5px', color: '#1c1917' }}>Common Ground</span>
+        background: 'rgba(255,255,255,0.75)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(0,0,0,0.07)',
+        position: 'sticky', top: 0, zIndex: 50,
+        boxShadow: '0 2px 16px rgba(0,0,0,0.05)'
+      }}>
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <img src={redImg} alt="" style={{ width: 22, height: 22, transform: 'rotate(-5deg)' }} />
+              <img src={yellowImg} alt="" style={{ width: 22, height: 22 }} />
+              <img src={greenImg} alt="" style={{ width: 22, height: 22, transform: 'rotate(5deg)' }} />
             </div>
-            <div className="flex items-center gap-3">
-              <SessionBadge />
-              <Link to="/facilitator/profile">
-                <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, border: '1.5px solid #e5e7eb', background: 'white', fontSize: '0.83rem', fontWeight: 600, color: '#374151', cursor: 'pointer' }}>
-                  <User size={14} /> Profile
-                </button>
-              </Link>
-              <button
-                onClick={() => { clearSession(); navigate('/'); }}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, border: 'none', background: 'transparent', fontSize: '0.83rem', fontWeight: 600, color: '#9ca3af', cursor: 'pointer' }}
-              >
-                <LogOut size={14} /> {isGuest ? 'Exit' : 'Logout'}
-              </button>
-            </div>
+            <span style={{ fontWeight: 800, fontSize: '1.15rem', letterSpacing: '-0.5px', color: '#1c1917' }}>Common Ground</span>
           </div>
-        </header>
+          <div className="flex items-center gap-3">
+            <SessionBadge />
+            <Link to="/facilitator/profile">
+              <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, border: '1.5px solid #e5e7eb', background: 'white', fontSize: '0.83rem', fontWeight: 600, color: '#374151', cursor: 'pointer' }}>
+                <User size={14} /> Profile
+              </button>
+            </Link>
+            <button
+              onClick={() => { clearSession(); navigate('/'); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 10, border: 'none', background: 'transparent', fontSize: '0.83rem', fontWeight: 600, color: '#9ca3af', cursor: 'pointer' }}
+            >
+              <LogOut size={14} /> {isGuest ? 'Exit' : 'Logout'}
+            </button>
+          </div>
+        </div>
+      </header>
 
       <main className="max-w-7xl mx-auto px-6 py-10" style={{ position: 'relative', zIndex: 1 }}>
-
-        {/* Page title */}
-        <div style={{ marginBottom: '2.5rem' }}>
-          <h1 style={{ fontSize: '2.6rem', fontWeight: 900, color: '#1c1917', letterSpacing: '-1.5px', margin: 0, lineHeight: 1.1 }}>
-            Your Dashboard
-          </h1>
-          <p style={{ color: '#78716c', marginTop: 8, fontSize: '1rem' }}>Choose a game mode and launch your session.</p>
-        </div>
 
         {/* Launch Game Banner */}
         <div style={{
@@ -177,9 +172,7 @@ export default function FacilitatorDashboard() {
             </div>
           </div>
 
-          {/* Right side: Launch + My Card Sets */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, position: 'relative', zIndex: 2 }}>
-            {/* My Card Sets button */}
             <button
               onClick={() => navigate('/facilitator/card-library')}
               style={{
@@ -199,7 +192,6 @@ export default function FacilitatorDashboard() {
               Card Library
             </button>
 
-            {/* Launch Game button */}
             <button
               onClick={handleLaunch}
               disabled={!selectedMode || isLaunching}
@@ -243,19 +235,35 @@ export default function FacilitatorDashboard() {
               return (
                 <div
                   key={mode.id}
-                  onClick={() => setSelectedMode(mode.id)}
+                  onClick={() => !mode.unavailable && setSelectedMode(mode.id)}
                   style={{
-                    background: isSelected ? mode.bg : 'rgba(255,255,255,0.85)',
+                    background: mode.unavailable ? '#fafafa' : isSelected ? mode.bg : 'rgba(255,255,255,0.85)',
                     border: isSelected ? `2px solid ${mode.border}` : '1.5px solid rgba(0,0,0,0.07)',
-                    borderRadius: 16, padding: '1.25rem', cursor: 'pointer',
+                    borderRadius: 16, padding: '1.25rem',
+                    cursor: mode.unavailable ? 'not-allowed' : 'pointer',
                     transition: 'all 0.15s',
                     boxShadow: isSelected ? `0 8px 24px ${mode.color}22` : '0 2px 8px rgba(0,0,0,0.04)',
                     transform: isSelected ? 'translateY(-2px)' : 'translateY(0)',
                     position: 'relative', overflow: 'hidden',
+                    opacity: mode.unavailable ? 0.6 : 1,
                   }}
-                  onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.08)'; } }}
-                  onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; } }}
+                  onMouseEnter={e => { if (!isSelected && !mode.unavailable) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.08)'; } }}
+                  onMouseLeave={e => { if (!isSelected && !mode.unavailable) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; } }}
                 >
+                  {/* Not yet available banner */}
+                  {mode.unavailable && (
+                    <div style={{
+                      position: 'absolute', top: 10, right: 10,
+                      background: '#f3f4f6', color: '#6b7280',
+                      fontSize: '0.6rem', fontWeight: 800,
+                      padding: '3px 8px', borderRadius: 20,
+                      textTransform: 'uppercase', letterSpacing: '0.05em',
+                      border: '1px solid #e5e7eb',
+                    }}>
+                      Not yet available
+                    </div>
+                  )}
+
                   <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '0.75rem' }}>
                     <div style={{ width: 90, height: 90, display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
                       {mode.illustration}
@@ -269,7 +277,7 @@ export default function FacilitatorDashboard() {
                   <span style={{ display: 'inline-block', background: isSelected ? mode.tagBg : '#f3f4f6', color: isSelected ? mode.tagColor : '#9ca3af', fontSize: '0.65rem', fontWeight: 700, padding: '3px 8px', borderRadius: 20, transition: 'all 0.15s' }}>
                     {mode.tag}
                   </span>
-                  {isSelected && (
+                  {isSelected && !mode.unavailable && (
                     <div style={{ position: 'absolute', top: 10, right: 10, width: 20, height: 20, borderRadius: '50%', background: mode.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', color: 'white', fontWeight: 900 }}>✓</div>
                   )}
                 </div>

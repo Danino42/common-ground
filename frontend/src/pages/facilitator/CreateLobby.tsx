@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams, useLocation } from 'react-router';
 import { cardSetsApi } from '../../utils/api';
 import type { CardSet } from '../../utils/api';
 import { ArrowLeft, Copy, Play, Users, Check, ChevronDown, Monitor, Shuffle, BarChart2, Smartphone } from 'lucide-react';
@@ -9,7 +9,6 @@ import { API_URL } from '../../utils/api';
 import { getLocalSavedIds } from '../../utils/savedSets';
 import { isLoggedIn } from '../../utils/auth';
 import SessionBadge from '../../components/SessionBadge';
-
 
 const MODE_CONFIG = {
   swipe: {
@@ -66,6 +65,7 @@ interface Player {
 
 export default function CreateLobby() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const codeFromUrl = searchParams.get('code');
   const mode = (searchParams.get('mode') || 'swipe') as keyof typeof MODE_CONFIG;
@@ -78,6 +78,7 @@ export default function CreateLobby() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [randomizeDeck, setRandomizeDeck] = useState(false);
+  const [allSets, setAllSets] = useState<CardSet[]>([]);
 
   const joinUrl = lobbyCode
     ? `${window.location.origin}/player/join?code=${lobbyCode}&mode=${mode}`
@@ -98,6 +99,38 @@ export default function CreateLobby() {
     return () => clearInterval(interval);
   }, [lobbyCode]);
 
+  // Reload sets every time this page is navigated to
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const sets = await cardSetsApi.list();
+        if (!isLoggedIn()) {
+          const guestIds: string[] = JSON.parse(localStorage.getItem('cg_guest_set_ids') || '[]');
+          const guestFetches = await Promise.all(
+            guestIds.map(id => cardSetsApi.get(id).catch(() => null))
+          );
+          const guestSets = guestFetches.filter((s): s is CardSet => s !== null);
+          setAllSets([...guestSets, ...sets]);
+        } else {
+          setAllSets(sets);
+        }
+      } catch {}
+    };
+    load();
+  }, [location.key]);
+
+  const localIds = new Set(getLocalSavedIds());
+  const guestIds: string[] = !isLoggedIn()
+    ? JSON.parse(localStorage.getItem('cg_guest_set_ids') || '[]')
+    : [];
+
+  const savedSets = allSets.filter(s =>
+    isLoggedIn() ? s.saved : localIds.has(s.id) || guestIds.includes(s.id)
+  );
+  const premadeSets = allSets.filter(s =>
+    s.author === 'system' && !(isLoggedIn() ? s.saved : localIds.has(s.id) || guestIds.includes(s.id))
+  );
+
   const handleStartGame = async () => {
     if (config.hasCardSet && !selectedCardSet) return;
     try {
@@ -115,43 +148,6 @@ export default function CreateLobby() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  // Build dropdown options: saved first, then premade, deduped
-  const [allSets, setAllSets] = useState<CardSet[]>([]);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const sets = await cardSetsApi.list();
-        // For guests, also fetch their sets by ID from localStorage
-        if (!isLoggedIn()) {
-          const guestIds: string[] = JSON.parse(localStorage.getItem('cg_guest_set_ids') || '[]');
-          const guestFetches = await Promise.all(
-            guestIds.map(id => cardSetsApi.get(id).catch(() => null))
-          );
-          const guestSets = guestFetches.filter((s): s is CardSet => s !== null);
-          setAllSets([...guestSets, ...sets]);
-        } else {
-          setAllSets(sets);
-        }
-      } catch {}
-    };
-    load();
-  }, []);
-
-  const localIds = new Set(getLocalSavedIds());
-  const guestSets: CardSet[] = !isLoggedIn()
-    ? JSON.parse(localStorage.getItem('cg_guest_sets') || '[]')
-    : [];
-
-  const allAvailable = [...guestSets, ...allSets];
-
-  const savedSets = allAvailable.filter(s =>
-    isLoggedIn() ? s.saved : localIds.has(s.id)
-  );
-  const premadeSets = allSets.filter(s =>
-    s.author === 'system' && !(isLoggedIn() ? s.saved : localIds.has(s.id))
-  );
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '9px 12px', borderRadius: 10,
@@ -182,9 +178,7 @@ export default function CreateLobby() {
           </button>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Logged in indicator */}
             <SessionBadge />
-
             <div style={{
               display: 'flex', alignItems: 'center', gap: 8,
               background: config.bg, border: `1.5px solid ${config.border}`,
@@ -384,15 +378,16 @@ export default function CreateLobby() {
             )}
 
             {mode === 'circle' && (
-            <div style={{ background: config.bg, border: `1.5px solid ${config.border}`, borderRadius: 16, padding: '1.25rem' }}>
-              <p style={{ margin: 0, fontSize: '0.82rem', color: config.color, fontWeight: 600, lineHeight: 1.6 }}>
-                In Circle mode, players don't join on their devices. Simply project this screen and go through the cards together as a group.
-              </p>
-            </div>
-          )}
-          <div style={{ background: 'rgba(255,255,255,0.85)', border: `1.5px solid ${config.border}`, borderRadius: 20, padding: '1.5rem', boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}>
-            <button
-              onClick={handleStartGame}
+              <div style={{ background: config.bg, border: `1.5px solid ${config.border}`, borderRadius: 16, padding: '1.25rem' }}>
+                <p style={{ margin: 0, fontSize: '0.82rem', color: config.color, fontWeight: 600, lineHeight: 1.6 }}>
+                  In Circle mode, players don't join on their devices. Simply project this screen and go through the cards together as a group.
+                </p>
+              </div>
+            )}
+
+            <div style={{ background: 'rgba(255,255,255,0.85)', border: `1.5px solid ${config.border}`, borderRadius: 20, padding: '1.5rem', boxShadow: '0 4px 24px rgba(0,0,0,0.05)' }}>
+              <button
+                onClick={handleStartGame}
                 disabled={config.hasCardSet && !selectedCardSet}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
@@ -402,12 +397,11 @@ export default function CreateLobby() {
                   cursor: config.hasCardSet && !selectedCardSet ? 'not-allowed' : 'pointer',
                   color: 'white', border: 'none', borderRadius: 14,
                   padding: '16px 24px', fontSize: '1rem', fontWeight: 800,
-
-                  boxShadow: `0 8px 32px ${config.color}44`,
+                  boxShadow: config.hasCardSet && !selectedCardSet ? 'none' : `0 8px 32px ${config.color}44`,
                   transition: 'transform 0.15s',
                 }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                onMouseEnter={e => { if (!(config.hasCardSet && !selectedCardSet)) e.currentTarget.style.transform = 'scale(1.02)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
               >
                 <Play size={18} fill="currentColor" />
                 Start Game

@@ -191,19 +191,31 @@ async def update_card_set(
         raise HTTPException(status_code=400, detail="Invalid ID")
     if not doc:
         raise HTTPException(status_code=404, detail="Card set not found")
-    if doc.get("author_email") != email:
+
+    # Allow edit if: same email, or both are None (guest set), or author is guest
+    doc_email = doc.get("author_email")
+    if doc_email != email and not (doc_email is None and email is None) and doc.get("author") != "guest":
         raise HTTPException(status_code=403, detail="Not your card set")
 
-    update = {k: v for k, v in data.dict().items() if v is not None}
+    update = {}
+    if data.name is not None:
+        update["name"] = data.name
+    if data.cards is not None:
+        cards_list = [c.dict() if hasattr(c, 'dict') else c for c in data.cards]
+        update["cards"] = cards_list
+        update["deck_hash"] = generate_deck_hash(
+            data.name or doc["name"], cards_list
+        )
+    if data.category is not None:
+        update["category"] = data.category
+    if data.description is not None:
+        update["description"] = data.description
+    if data.is_public is not None:
+        update["is_public"] = data.is_public
 
-    # Regenerate hash if name or cards changed
-    new_cards = update.get("cards", doc["cards"])
-    new_name = update.get("name", doc["name"])
-    if isinstance(new_cards[0], dict) is False:
-        new_cards = [c.dict() for c in new_cards]
-    update["deck_hash"] = generate_deck_hash(new_name, new_cards)
+    if update:
+        await db["card_sets"].update_one({"_id": ObjectId(set_id)}, {"$set": update})
 
-    await db["card_sets"].update_one({"_id": ObjectId(set_id)}, {"$set": update})
     updated = await db["card_sets"].find_one({"_id": ObjectId(set_id)})
     return serialize(updated)
 

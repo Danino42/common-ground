@@ -1,0 +1,20 @@
+Bubble sort has O(n²) worst-case time complexity
+Binary search requires the input array to be sorted
+Recursion always uses more memory than an iterative solution
+An AVL tree is a self-balancing binary search tree
+Dynamic programming solves problems by breaking them into overlapping subproblems
+A linked list allows O(1) random access by index
+The height of a balanced binary tree with n nodes is O(log n)
+Hashing guarantees O(1) worst-case lookup time
+Merge sort is a divide and conquer algorithm
+A stack follows Last In First Out order
+Dijkstra's algorithm works correctly with negative edge weights
+An abstract data type defines behavior independently of implementation
+Quicksort has O(n log n) worst-case time complexity
+A complete binary tree can be efficiently stored in an array
+In C, a pointer stores the memory address of a variable
+Dynamic programming requires optimal substructure to apply
+A hash collision occurs when two keys map to the same index
+Depth-first search uses a queue as its primary data structure
+The recurrence T(n) = 2T(n/2) + n solves to O(n log n)
+An AVL tree rebalances itself after every insertion or deletion

@@ -67,6 +67,8 @@ export default function CreateCardSet() {
   // Import feedback
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
 
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+
   // Load the set being edited + all saved sets for browse panel
   useEffect(() => {
     const init = async () => {
@@ -117,7 +119,7 @@ export default function CreateCardSet() {
             const copy = set.author === 'system';
             setIsCopy(copy);
             setIsEdit(!copy);
-            setSetName(set.name);
+            setSetName(isCopy ? set.name : `${set.name} modified`);
             setDescription(set.description ?? '');
             setCards(set.cards.map(c => ({ ...c })));
           }
@@ -277,7 +279,7 @@ export default function CreateCardSet() {
 
       <header style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', borderBottom: '2px solid rgba(0,0,0,0.07)', position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 1px 12px rgba(0,0,0,0.06)' }}>
         <div className="max-w-6xl mx-auto px-6 py-3" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button onClick={() => navigate('/facilitator/card-library')} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600, fontFamily: 'inherit' }}>
+          <button onClick={() => setShowLeaveConfirm(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600, fontFamily: 'inherit' }}>
             <ArrowLeft size={16} /> Card Library
           </button>
           <p style={{ margin: 0, fontWeight: 800, color: '#1c1917', fontSize: '0.95rem' }}>{pageTitle}</p>
@@ -537,6 +539,33 @@ export default function CreateCardSet() {
           </div>
         </div>
       </main>
+      {showLeaveConfirm && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <div style={{ background: 'white', borderRadius: 20, width: '100%', maxWidth: 400, padding: '2rem', boxShadow: '0 24px 60px rgba(0,0,0,0.2)', textAlign: 'center' }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#fff5f5', border: '1.5px solid #fca5a5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+              <ArrowLeft size={20} color="#ef4444" />
+            </div>
+            <h3 style={{ margin: '0 0 0.5rem', fontWeight: 900, fontSize: '1.1rem', color: '#1c1917' }}>Leave without saving?</h3>
+            <p style={{ margin: '0 0 1.5rem', fontSize: '0.88rem', color: '#6b7280', lineHeight: 1.6 }}>
+              Are you sure you want to leave? You will lose all unsaved changes.
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => setShowLeaveConfirm(false)}
+                style={{ flex: 1, padding: '11px', borderRadius: 12, border: '1.5px solid #e5e7eb', background: 'white', color: '#374151', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer' }}
+              >
+                Stay
+              </button>
+              <button
+                onClick={() => navigate('/facilitator/card-library')}
+                style={{ flex: 1, padding: '11px', borderRadius: 12, border: 'none', background: '#ef4444', color: 'white', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}
+              >
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
