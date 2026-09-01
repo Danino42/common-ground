@@ -43,7 +43,7 @@ export default function CircleView({ cards }: Props) {
 
   if (cards.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '6rem 2rem', color: '#9ca3af', fontFamily: "'Georgia', serif" }}>
+      <div style={{ textAlign: 'center', padding: '6rem 2rem', color: '#9ca3af', fontFamily: "inherit" }}>
         <p style={{ fontSize: '1.1rem', fontWeight: 600 }}>Waiting for game to start...</p>
       </div>
     );
@@ -94,7 +94,7 @@ export default function CircleView({ cards }: Props) {
           margin: 0,
           lineHeight: 1.25,
           letterSpacing: '-1px',
-          fontFamily: "'Georgia', serif",
+          fontFamily: "inherit",
         }}>
           {currentCard?.text}
         </p>

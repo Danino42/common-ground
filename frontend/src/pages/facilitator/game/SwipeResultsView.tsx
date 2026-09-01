@@ -51,6 +51,21 @@ export default function SwipeResultsView({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
+      <style>{`
+        @keyframes pulse-bar {
+          0%, 100% { transform: scaleY(1); }
+          50% { transform: scaleY(0.96); }
+        }
+        @keyframes pulse-bar-delayed {
+          0%, 100% { transform: scaleY(1); }
+          50% { transform: scaleY(1.04); }
+        }
+        @keyframes wave {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(400%); }
+        }
+      `}</style>
+
       {/* Header */}
       <div style={{ ...card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.5rem' }}>
         <div>
@@ -75,7 +90,6 @@ export default function SwipeResultsView({
             {resultsBlurred ? <EyeOff size={13} /> : <Eye size={13} />}
             {resultsBlurred ? 'Show Results' : 'Hide Results'}
           </button>
-          {/* responses / participants badge */}
           <span style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', color: '#15803d', fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20 }}>
             {total} / {totalParticipants} responded
           </span>
@@ -86,7 +100,7 @@ export default function SwipeResultsView({
       <div style={{
         ...card, textAlign: 'center', padding: '2rem 2.5rem',
         background: 'linear-gradient(135deg, #fafafa 0%, #f0fdf4 100%)',
-        height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <p style={{ fontSize: '2.2rem', fontWeight: 900, color: '#1c1917', margin: 0, lineHeight: 1.3, letterSpacing: '-0.5px' }}>
           {resultCard?.text}
@@ -97,25 +111,36 @@ export default function SwipeResultsView({
       <div style={{ ...card }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem' }}>
           {[
-            { label: 'Yeah', value: cardResults.yes, pct: yesPercent, color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0', bar: 'linear-gradient(180deg, #86efac, #22c55e)' },
-            { label: 'Nope', value: cardResults.no, pct: noPercent, color: '#b91c1c', bg: '#fff5f5', border: '#fca5a5', bar: 'linear-gradient(180deg, #fca5a5, #ef4444)' },
-          ].map(({ label, value, pct, color, bg, border, bar }) => (
+                        { label: 'Nope', value: cardResults.no, pct: noPercent, color: '#b91c1c', bg: '#fff5f5', border: '#fca5a5', bar: 'linear-gradient(180deg, #fca5a5, #ef4444)', pulseAnim: 'pulse-bar', waveDelay: '0s', blurColor: '#ef444433' },
+            { label: 'Yeah', value: cardResults.yes, pct: yesPercent, color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0', bar: 'linear-gradient(180deg, #86efac, #22c55e)', pulseAnim: 'pulse-bar-delayed', waveDelay: '0.5s', blurColor: '#22c55e33' },
+          ].map(({ label, value, pct, color, bg, border, bar, pulseAnim, waveDelay, blurColor }) => (
             <div key={label} style={{ textAlign: 'center' }}>
               <p style={{ margin: '0 0 0.75rem', fontSize: '0.78rem', fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-              {/* taller (220px) bar container */}
-              <div style={{ height: 220, background: bg, borderRadius: 14, position: 'relative', overflow: 'hidden', border: `1.5px solid ${border}` }}>
+              <div style={{ height: 360, background: bg, borderRadius: 14, position: 'relative', overflow: 'hidden', border: `1.5px solid ${border}` }}>
 
                 {/* filled bar */}
                 {!resultsBlurred && (
                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${pct}%`, background: bar, borderRadius: '12px 12px 0 0', transition: 'height 0.6s ease' }} />
                 )}
 
-                {/* blur overlay — covers the full rectangle */}
+                {/* hidden — pulsing wave animation */}
                 {resultsBlurred && (
                   <>
-                        <div style={{ position: 'absolute', inset: 0, background: bar }} />
-                        <div style={{ position: 'absolute', inset: 0, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', background: `${bg}cc` }} />
-                    </>
+                    <div style={{ position: 'absolute', inset: 0, background: bg }} />
+                    <div style={{
+                      position: 'absolute', bottom: 0, left: 0, right: 0, height: '75%',
+                      background: blurColor, borderRadius: '12px 12px 0 0',
+                      transformOrigin: 'bottom',
+                      animation: `${pulseAnim} 2.5s ease-in-out infinite`,
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        position: 'absolute', top: 0, left: 0, width: '30%', height: '100%',
+                        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+                        animation: `wave 2s linear infinite ${waveDelay}`,
+                      }} />
+                    </div>
+                  </>
                 )}
 
                 {/* numbers */}

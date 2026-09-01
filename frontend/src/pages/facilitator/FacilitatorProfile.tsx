@@ -57,7 +57,7 @@ export default function FacilitatorProfile() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'white', fontFamily: "'Georgia', serif" }}>
+    <div className="min-h-screen" style={{ background: 'white', fontFamily: "inherit" }}>
       <AppBackground />
 
       <header style={{ background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(0,0,0,0.07)', position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 16px rgba(0,0,0,0.05)' }}>

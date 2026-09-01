@@ -77,7 +77,7 @@ export default function FacilitatorGame() {
   return (
     <div style={{
       minHeight: '100svh',
-      fontFamily: "'Georgia', serif",
+      fontFamily: "inherit",
       background: '#fafafa',
       position: 'relative',
     }}>

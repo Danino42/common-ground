@@ -24,6 +24,7 @@ const GAME_MODES = [
     tagColor: '#15803d',
     tagBg: '#dcfce7',
     unavailable: false,
+    hidden: false,
   },
   {
     id: 'topics',
@@ -38,6 +39,7 @@ const GAME_MODES = [
     tagColor: '#0369a1',
     tagBg: '#e0f2fe',
     unavailable: true,
+    hidden: true,
   },
   {
     id: 'random',
@@ -52,6 +54,7 @@ const GAME_MODES = [
     tagColor: '#7c3aed',
     tagBg: '#ede9fe',
     unavailable: false,
+    hidden: true,
   },
   {
     id: 'circle',
@@ -66,6 +69,7 @@ const GAME_MODES = [
     tagColor: '#b45309',
     tagBg: '#fef3c7',
     unavailable: false,
+    hidden: true,
   },
 ];
 
@@ -94,8 +98,10 @@ export default function FacilitatorDashboard() {
     }
   };
 
+  const visibleModes = GAME_MODES.filter(m => !m.hidden);
+
   return (
-    <div className="min-h-screen" style={{ background: 'white', fontFamily: "'Georgia', serif" }}>
+    <div className="min-h-screen" style={{ background: 'white' }}>
       <AppBackground />
 
       {/* Header */}
@@ -167,7 +173,7 @@ export default function FacilitatorDashboard() {
                 {selectedMode ? 'Ready to Launch!' : 'Select a game mode below'}
               </h2>
               <p style={{ color: selectedMode ? 'rgba(255,255,255,0.65)' : '#d1d5db', margin: '6px 0 0', fontSize: '0.9rem' }}>
-                {selectedMode ? 'Create a lobby, get a QR code, and invite your players' : 'Pick one of the four modes to continue'}
+                {selectedMode ? 'Create a lobby, get a QR code, and invite your players' : 'Pick one of the modes to continue'}
               </p>
             </div>
           </div>
@@ -229,8 +235,8 @@ export default function FacilitatorDashboard() {
             )}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-            {GAME_MODES.map((mode) => {
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${visibleModes.length}, 1fr)`, gap: '1rem', maxWidth: visibleModes.length === 1 ? 320 : '100%', margin: '0 auto' }}>
+            {visibleModes.map((mode) => {
               const isSelected = selectedMode === mode.id;
               return (
                 <div
@@ -250,7 +256,6 @@ export default function FacilitatorDashboard() {
                   onMouseEnter={e => { if (!isSelected && !mode.unavailable) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.08)'; } }}
                   onMouseLeave={e => { if (!isSelected && !mode.unavailable) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; } }}
                 >
-                  {/* Not yet available banner */}
                   {mode.unavailable && (
                     <div style={{
                       position: 'absolute', top: 10, right: 10,

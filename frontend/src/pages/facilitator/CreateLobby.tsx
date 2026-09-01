@@ -159,8 +159,6 @@ export default function CreateLobby() {
     background: 'white',
   };
 
-  const finishedCount = players.filter(p => p.finished).length;
-
   return (
     <div className="min-h-screen" style={{ background: 'white', fontFamily: "'Georgia', serif" }}>
       <AppBackground />
@@ -335,11 +333,6 @@ export default function CreateLobby() {
                     <span style={{ background: config.bg, border: `1.5px solid ${config.border}`, color: config.color, fontSize: '0.72rem', fontWeight: 700, padding: '2px 10px', borderRadius: 20 }}>
                       {players.length} joined
                     </span>
-                    {finishedCount > 0 && (
-                      <span style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', color: '#15803d', fontSize: '0.72rem', fontWeight: 700, padding: '2px 10px', borderRadius: 20 }}>
-                        {finishedCount} done ✓
-                      </span>
-                    )}
                   </div>
                 </div>
 

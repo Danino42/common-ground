@@ -83,7 +83,7 @@ export default function FacilitatorLogin() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'white', fontFamily: "'Georgia', serif", display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+    <div className="min-h-screen" style={{ background: 'white', fontFamily: "inherit", display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
       <AppBackground />
 
       <div style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1 }}>

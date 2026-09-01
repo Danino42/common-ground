@@ -378,14 +378,14 @@ export default function CardLibrary() {
 
   if (loadingSession) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Georgia', serif", color: '#9ca3af' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "inherit", color: '#9ca3af' }}>
         Loading your library...
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'white', fontFamily: "'Georgia', serif" }}>
+    <div style={{ minHeight: '100vh', background: 'white', fontFamily: "inherit" }}>
       <AppBackground />
 
       <header style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', borderBottom: '2px solid rgba(0,0,0,0.07)', position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 1px 12px rgba(0,0,0,0.06)' }}>

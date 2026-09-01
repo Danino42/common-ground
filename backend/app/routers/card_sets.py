@@ -103,7 +103,7 @@ async def list_card_sets(
             saved_ids = set(facilitator.get("saved_card_sets", []))
 
     sets = []
-    async for doc in db["card_sets"].find(query):
+    async for doc in db["card_sets"].find(query).sort([("sort_order", 1), ("name", 1)]):
         s = serialize(doc)
         s["saved"] = s["id"] in saved_ids
         sets.append(s)
@@ -286,7 +286,7 @@ async def generate_cards(data: GenerateRequest):
 
     system_prompt = """You are helping a facilitator create card sets for group sessions.
 Each card is a short statement or question that participants respond to with Yes or No.
-Return ONLY a JSON array of strings, nothing else. Example: ["I have lived in more than one country", "Bubble sort has O(n²) worst-case complexity"]
+Return ONLY a JSON array of strings, nothing else. Example: ["I have lived in more than one country", "I am not a morning person"]
 
 Follow these rules:
 - Match the tone and style of the user's request exactly.

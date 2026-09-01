@@ -247,7 +247,7 @@ export default function PlayerWaiting() {
         onClick={handleTap}
         style={{
           minHeight: '100svh',
-          fontFamily: "'Georgia', serif",
+          fontFamily: "inherit",
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
           position: 'relative', overflow: 'hidden',
@@ -301,7 +301,7 @@ export default function PlayerWaiting() {
   return (
     <div style={{
       minHeight: '100svh', background: 'white',
-      fontFamily: "'Georgia', serif",
+      fontFamily: "inherit",
       display: 'flex', flexDirection: 'column',
       position: 'relative', overflow: 'hidden',
     }}>
@@ -344,10 +344,10 @@ export default function PlayerWaiting() {
             padding: '0.5rem 2rem 0',
             maxWidth: 360, margin: '0 auto', width: '100%',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: isLeft ? '#ef4444' : '#374151', fontSize: '0.82rem', fontWeight: 700, transition: 'color 0.15s', opacity: isLeft ? 0.6 + swipeProgress * 0.4 : 0.5 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: isLeft ? '#ef4444' : '#1c1917', fontSize: '0.82rem', fontWeight: 700, transition: 'color 0.15s', opacity: isLeft ? 0.6 + swipeProgress * 0.4 : 0.5 }}>
               <span style={{ fontSize: '1.1rem' }}>←</span> Nope
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: isRight ? '#22c55e' : '#374151', fontSize: '0.82rem', fontWeight: 700, transition: 'color 0.15s', opacity: isRight ? 0.6 + swipeProgress * 0.4 : 0.5 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: isRight ? '#22c55e' : '#1c1917', fontSize: '0.82rem', fontWeight: 700, transition: 'color 0.15s', opacity: isRight ? 0.6 + swipeProgress * 0.4 : 0.5 }}>
               Yeah <span style={{ fontSize: '1.1rem' }}>→</span>
             </div>
           </div>
@@ -412,7 +412,7 @@ export default function PlayerWaiting() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, padding: '2rem', textAlign: 'center' }}>
           <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #278967, #4ade80)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', marginBottom: '1.25rem', boxShadow: '0 8px 32px rgba(22,101,52,0.3)' }}>✓</div>
           <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.7rem', fontWeight: 900, color: '#1c1917', letterSpacing: '-0.5px' }}>All done!</h2>
-          <p style={{ color: '#78716c', fontSize: '0.95rem', margin: '0 0 2rem', lineHeight: 1.6 }}>Your answers have been recorded.<br />Waiting for the facilitator…</p>
+          <p style={{ color: '#78716c', fontSize: '0.95rem', margin: '0 0 2rem', lineHeight: 1.6 }}>Your answers have been recorded.</p>
           <div style={{ background: 'rgba(255,255,255,0.85)', border: '1.5px solid rgba(0,0,0,0.07)', borderRadius: 16, padding: '1.25rem', width: '100%', maxWidth: 280, marginBottom: '1.5rem' }}>
             <p style={{ margin: '0 0 0.75rem', fontWeight: 700, fontSize: '0.82rem', color: '#374151' }}>Your answers</p>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
@@ -429,7 +429,7 @@ export default function PlayerWaiting() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#9ca3af', fontSize: '0.82rem' }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80', animation: 'pulse 1.5s infinite' }} />
-            Waiting for groups to be assigned...
+            Waiting for the facilitator...
           </div>
         </div>
       )}
