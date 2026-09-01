@@ -96,11 +96,11 @@ export default function SwipeResultsView({
         </div>
       </div>
 
-      {/* Card text */}
+            {/* Card text */}
       <div style={{
         ...card, textAlign: 'center', padding: '2rem 2.5rem',
         background: 'linear-gradient(135deg, #fafafa 0%, #f0fdf4 100%)',
-        minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        minHeight: 160, display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <p style={{ fontSize: '2.2rem', fontWeight: 900, color: '#1c1917', margin: 0, lineHeight: 1.3, letterSpacing: '-0.5px' }}>
           {resultCard?.text}
