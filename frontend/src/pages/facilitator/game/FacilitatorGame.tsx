@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router';
-import { ArrowLeft } from 'lucide-react';
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router';
+import { ArrowLeft, X } from 'lucide-react';
 import AppBackground from '../../AppBackground';
 import { API_URL } from '../../../utils/api';
 import SwipeResultsView from './SwipeResultsView';
@@ -23,15 +23,21 @@ interface Player {
 
 export default function FacilitatorGame() {
   const { lobbyCode } = useParams();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mode = searchParams.get('mode') || 'swipe';
 
   const [results, setResults] = useState<Record<string, { yes: number; no: number }>>({});
+  const [cards, setCards] = useState<{ id: string; text: string }[]>([]);
   const [currentResultIndex, setCurrentResultIndex] = useState(0);
   const [resultsBlurred, setResultsBlurred] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [playerAnswers, setPlayerAnswers] = useState<Record<string, Record<string, boolean>>>({});
+  const [gameData, setGameData] = useState<any>(null);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+
+  // one_by_one: current facilitator card index
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
 
   useEffect(() => {
     document.body.style.minHeight = '100svh';
@@ -59,11 +65,12 @@ export default function FacilitatorGame() {
       try {
         const res = await fetch(`${API_URL}/games/${lobbyCode}/results`);
         const data = await res.json();
-        
-        if (data.cards && data.cards.length > 0) setCards(data.cards);
         setResults(data.results || {});
+        setCards(data.cards || []);
         setPlayers(data.players || []);
         setPlayerAnswers(data.answers || {});
+        setGameData(data);
+        setCurrentCardIndex(data.current_card_index ?? 0);
       } catch {}
     };
     fetchResults();
@@ -71,49 +78,77 @@ export default function FacilitatorGame() {
     return () => clearInterval(interval);
   }, [lobbyCode]);
 
-  const [cards, setCards] = useState<{ id: string; text: string }[]>([]);
+  const handleAdvanceCard = async () => {
+    try {
+      await fetch(`${API_URL}/games/${lobbyCode}/advance-card`, { method: 'PATCH' });
+      setCurrentCardIndex(i => i + 1);
+    } catch {}
+  };
 
+  const color = modeColor[mode] || '#15803d';
+  const label = modeLabel[mode] || 'Game';
 
   return (
-    <div style={{
-      minHeight: '100svh',
-      fontFamily: "inherit",
-      background: '#fafafa',
-      position: 'relative',
-    }}>
+    <div style={{ minHeight: '100svh', fontFamily: 'inherit', background: '#fafafa', position: 'relative' }}>
       <AppBackground />
 
-      <div style={{
-        position: 'fixed', inset: 0,
-        background: 'linear-gradient(160deg, rgba(255,251,235,0.6) 0%, rgba(240,253,244,0.4) 100%)',
-        zIndex: 0, pointerEvents: 'none',
-      }} />
+      <div style={{ position: 'fixed', inset: 0, background: 'linear-gradient(160deg, rgba(255,251,235,0.6) 0%, rgba(240,253,244,0.4) 100%)', zIndex: 0, pointerEvents: 'none' }} />
 
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 50,
-        background: 'rgba(255,255,255,0.85)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid #f0f0f0',
-        boxShadow: '0 1px 12px rgba(0,0,0,0.06)',
-      }}>
+      <header style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #f0f0f0', boxShadow: '0 1px 12px rgba(0,0,0,0.06)' }}>
         <div className="max-w-5xl mx-auto px-6 py-3" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <button
               onClick={() => setShowLeaveConfirm(true)}
               style={{ color: '#9ca3af', display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.82rem', fontWeight: 600 }}
             >
-              <ArrowLeft size={18} />
+              <ArrowLeft size={16} /> Dashboard
             </button>
-            <div>
-              <p style={{ margin: 0, fontWeight: 800, color: '#1c1917', fontSize: '0.95rem' }}>
-                <span style={{ color: modeColor[mode] || '#15803d' }}>●</span> {modeLabel[mode] || 'Game'}
-              </p>
-              <p style={{ margin: 0, fontSize: '0.72rem', color: '#9ca3af', fontFamily: 'monospace' }}>
-                {lobbyCode}
-              </p>
+            <div style={{ height: 20, width: 1, background: '#e5e7eb' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}88` }} />
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color }}>
+                {label}
+              </span>
+              {lobbyCode && (
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#9ca3af', background: '#f3f4f6', padding: '2px 8px', borderRadius: 20 }}>
+                  #{lobbyCode}
+                </span>
+              )}
             </div>
           </div>
-          <SessionBadge />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {/* One by one: Next Card button */}
+            {gameData?.one_by_one && (
+              <button
+                onClick={handleAdvanceCard}
+                disabled={currentCardIndex >= (cards.length - 1)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '7px 14px', borderRadius: 10, border: 'none',
+                  background: currentCardIndex >= (cards.length - 1) ? '#e5e7eb' : color,
+                  color: 'white',
+                  fontSize: '0.78rem', fontWeight: 700,
+                  cursor: currentCardIndex >= (cards.length - 1) ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                Next Card →
+                <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: 10, padding: '1px 6px', fontSize: '0.68rem' }}>
+                  {currentCardIndex + 1}/{cards.length}
+                </span>
+              </button>
+            )}
+
+            <SessionBadge />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: 20, padding: '4px 12px' }}>
+              <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' }} />
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#15803d' }}>
+                {players.length} player{players.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -149,53 +184,36 @@ export default function FacilitatorGame() {
           />
         )}
       </main>
+
+      {/* Leave confirmation */}
       {showLeaveConfirm && (
-                <div style={{
-                  position: 'fixed', inset: 0, zIndex: 200,
-                  background: 'rgba(0,0,0,0.4)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <div style={{
-                    background: 'white', borderRadius: 20, padding: '2rem',
-                    maxWidth: 380, width: '90%',
-                    boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
-                    textAlign: 'center',
-                  }}>
-                    <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#fef2f2', border: '1.5px solid #fca5a5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-                      <ArrowLeft size={20} color="#ef4444" />
-                    </div>
-                    <h3 style={{ margin: '0 0 0.5rem', fontWeight: 900, fontSize: '1.1rem', color: '#1c1917' }}>
-                      Leave this game?
-                    </h3>
-                    <p style={{ margin: '0 0 1.5rem', fontSize: '0.88rem', color: '#6b7280', lineHeight: 1.6 }}>
-                      Are you sure you want to go back to the dashboard? This will abort your game.
-                    </p>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button
-                        onClick={() => setShowLeaveConfirm(false)}
-                        style={{
-                          flex: 1, padding: '11px', borderRadius: 12,
-                          border: '1.5px solid #e5e7eb', background: 'white',
-                          color: '#374151', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer',
-                        }}
-                      >
-                        Stay
-                      </button>
-                      <button
-                        onClick={() => { window.location.href = '/facilitator/dashboard'; }}
-                        style={{
-                          flex: 1, padding: '11px', borderRadius: 12,
-                          border: 'none', background: '#ef4444',
-                          color: 'white', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer',
-                          boxShadow: '0 4px 12px rgba(239,68,68,0.3)',
-                        }}
-                      >
-                        Leave
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <div style={{ background: 'white', borderRadius: 20, width: '100%', maxWidth: 380, padding: '2rem', boxShadow: '0 24px 60px rgba(0,0,0,0.2)', textAlign: 'center' }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#fff5f5', border: '1.5px solid #fca5a5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+              <X size={20} color="#ef4444" />
+            </div>
+            <h3 style={{ margin: '0 0 0.5rem', fontWeight: 900, fontSize: '1.1rem', color: '#1c1917' }}>End this game?</h3>
+            <p style={{ margin: '0 0 1.5rem', fontSize: '0.88rem', color: '#6b7280', lineHeight: 1.6 }}>
+              Players will lose their connection to this session.
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowLeaveConfirm(false)} style={{ flex: 1, padding: '11px', borderRadius: 12, border: '1.5px solid #e5e7eb', background: 'white', color: '#374151', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer' }}>
+                Stay
+              </button>
+              <button onClick={() => navigate('/facilitator/dashboard')} style={{ flex: 1, padding: '11px', borderRadius: 12, border: 'none', background: '#ef4444', color: 'white', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}>
+                End Game
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+      `}</style>
     </div>
   );
 }

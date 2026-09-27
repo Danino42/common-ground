@@ -119,7 +119,7 @@ async def mark_finished(lobby_code: str, player_id: str):
     return {"status": "ok"}
 
 @router.patch("/{lobby_code}/start")
-async def start_game(lobby_code: str, card_set_id: str, randomize: bool = False):
+async def start_game(lobby_code: str, card_set_id: str, randomize: bool = False, one_by_one: bool = False):
     try:
         card_set = await db["card_sets"].find_one({"_id": ObjectId(card_set_id)})
     except Exception:
@@ -144,11 +144,12 @@ async def start_game(lobby_code: str, card_set_id: str, randomize: bool = False)
         {"$set": {
             "status": "started",
             "card_set_id": card_set_id,
-            "card_set_name": card_set["name"],
             "cards": cards,
             "randomize_deck": randomize,
-            "players": reset_players,  # ← reset finished flags
-            "answers": {},  # ← also reset answers
+            "one_by_one": one_by_one,
+            "current_card_index": 0,  # facilitator controls this
+            "players": reset_players,
+            "answers": {},
         }}
     )
     return {"status": "started"}
@@ -173,6 +174,20 @@ async def save_groups(lobby_code: str, data: GroupsPayload):
         {"$set": {"groups": data.groups}}
     )
     return {"status": "ok"}
+
+@router.patch("/{lobby_code}/advance-card")
+async def advance_card(lobby_code: str):
+    game = await games.find_one({"lobby_code": lobby_code})
+    if not game:
+        raise HTTPException(status_code=404, detail="Game not found")
+    current = game.get("current_card_index", 0)
+    total = len(game.get("cards", []))
+    new_index = min(current + 1, total - 1)
+    await games.update_one(
+        {"lobby_code": lobby_code},
+        {"$set": {"current_card_index": new_index}}
+    )
+    return {"current_card_index": new_index}
 
 class GroupRequest(BaseModel):
     method: str = "random"  # "random", "similarities", "opposites"

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router';
 import { useDrag } from '@use-gesture/react';
 import AppBackground from '../AppBackground';
@@ -6,80 +6,25 @@ import greenImg from '../../images/green.png';
 import redImg from '../../images/red.png';
 import yellowImg from '../../images/yellow.png';
 
-const API_URL = import.meta.env.VITE_API_URL ||
-  `${window.location.protocol}//${window.location.hostname}:8000`;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-const GROUP_BG_COLORS = [
-  '#7c3aed', '#2563eb', '#dc2626', '#16a34a',
-  '#d97706', '#db2777', '#0d9488', '#ea580c',
-];
-
-const SHAPES = ['circle', 'square', 'triangle', 'star', 'diamond'] as const;
-type Shape = typeof SHAPES[number];
-
-const COLORS = [
-  '#4ade80', '#f87171', '#fbbf24', '#60a5fa', '#a78bfa',
-  '#f472b6', '#34d399', '#fb923c', '#38bdf8', '#e879f9',
-];
-
-function ShapeDisplay({ shape, color, size }: { shape: Shape; color: string; size: number }) {
-  if (shape === 'circle') {
-    return (
-      <div style={{
-        width: size, height: size, borderRadius: '50%',
-        background: color,
-        boxShadow: `0 0 60px ${color}88, 0 0 120px ${color}44`,
-        transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-      }} />
-    );
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  if (shape === 'square') {
-    return (
-      <div style={{
-        width: size, height: size, borderRadius: 24,
-        background: color,
-        boxShadow: `0 0 60px ${color}88, 0 0 120px ${color}44`,
-        transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-      }} />
-    );
-  }
-  if (shape === 'diamond') {
-    return (
-      <div style={{
-        width: size, height: size,
-        background: color,
-        transform: 'rotate(45deg)',
-        borderRadius: 16,
-        boxShadow: `0 0 60px ${color}88, 0 0 120px ${color}44`,
-        transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-      }} />
-    );
-  }
-  if (shape === 'triangle') {
-    return (
-      <svg width={size} height={size} viewBox="0 0 100 100" style={{ filter: `drop-shadow(0 0 20px ${color}88)`, transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
-        <polygon points="50,5 95,95 5,95" fill={color} />
-      </svg>
-    );
-  }
-  if (shape === 'star') {
-    return (
-      <svg width={size} height={size} viewBox="0 0 100 100" style={{ filter: `drop-shadow(0 0 20px ${color}88)`, transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
-        <polygon points="50,5 61,35 95,35 68,57 79,91 50,70 21,91 32,57 5,35 39,35" fill={color} />
-      </svg>
-    );
-  }
-  return null;
+  return a;
 }
+
+const SHAPES = ['circle', 'square', 'triangle', 'star', 'blob'];
+const COLORS = ['#15803d', '#0369a1', '#7c3aed', '#b45309', '#be185d', '#0f766e', '#c2410c'];
 
 export default function PlayerWaiting() {
   const { gameCode, playerId } = useParams();
 
   const [gameStarted, setGameStarted] = useState(false);
-  const [myGroup, setMyGroup] = useState<{ index: number; color: string } | null>(null);
-
   const [cards, setCards] = useState<{ id: string; text: string }[]>([]);
-
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const [dragX, setDragX] = useState(0);
@@ -87,8 +32,12 @@ export default function PlayerWaiting() {
   const [isDragging, setIsDragging] = useState(false);
   const [exitDirection, setExitDirection] = useState<'left' | 'right' | null>(null);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
-  const [justMounted, setJustMounted] = useState(false);
 
+  // one_by_one mode
+  const [oneByOne, setOneByOne] = useState(false);
+  const [facilitatorCardIndex, setFacilitatorCardIndex] = useState(0);
+
+  // Waiting screen interactive shape
   const [shapeIndex, setShapeIndex] = useState(0);
   const [colorIndex, setColorIndex] = useState(0);
   const [tapCount, setTapCount] = useState(0);
@@ -108,38 +57,39 @@ export default function PlayerWaiting() {
     }, 200);
   }, [isAnimating]);
 
-  // Poll for game start and group assignment
+  // Poll for game start + one_by_one index
   useEffect(() => {
     if (!gameCode) return;
-    const check = async () => {
+    const poll = async () => {
       try {
         const res = await fetch(`${API_URL}/games/${gameCode}`);
         const data = await res.json();
+
         if (data.status === 'started' && !gameStarted) {
           const rawCards = data.cards || [];
-          setCards(rawCards);
+          setCards(data.randomize_deck ? shuffleArray(rawCards) : rawCards);
+          setOneByOne(data.one_by_one || false);
+          setFacilitatorCardIndex(data.current_card_index ?? 0);
           setGameStarted(true);
         }
-        if (data.groups && playerId) {
-          const groupIndex = (data.groups as string[][]).findIndex(g => g.includes(playerId));
-          if (groupIndex !== -1) {
-            setMyGroup({ index: groupIndex, color: GROUP_BG_COLORS[groupIndex % GROUP_BG_COLORS.length] });
-          }
+
+        if (data.one_by_one && gameStarted) {
+          setFacilitatorCardIndex(data.current_card_index ?? 0);
         }
       } catch {}
     };
-    check();
-    const interval = setInterval(check, 2000);
+    poll();
+    const interval = setInterval(poll, 2000);
     return () => clearInterval(interval);
-  }, [gameCode, gameStarted, playerId]);
+  }, [gameCode, gameStarted]);
 
   const SWIPE_THRESHOLD = 90;
   const done = currentIndex >= cards.length;
   const currentCard = cards[currentIndex];
 
+  // Mark finished
   useEffect(() => {
     if (done && playerId && gameCode) {
-      // Small delay to ensure all answer submissions have completed
       const timer = setTimeout(() => {
         fetch(`${API_URL}/games/${gameCode}/player/${encodeURIComponent(playerId)}/finished`, {
           method: 'PATCH',
@@ -151,44 +101,39 @@ export default function PlayerWaiting() {
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (isAnimatingOut) return;
+    if (oneByOne && currentIndex >= facilitatorCardIndex) return;
+
     setIsAnimatingOut(true);
     setExitDirection(direction);
     const answer = direction === 'right';
-    setAnswers(prev => ({ ...prev, [currentCard.id]: answer }));
 
-    if (playerId && gameCode) {
-      fetch(`${API_URL}/games/answer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          player_id: playerId,
-          lobby_code: gameCode,
-          card_id: currentCard.id,
-          answer,
-        }),
-      }).catch(() => {});
+    if (currentCard && playerId && gameCode) {
+      try {
+        await fetch(`${API_URL}/games/${gameCode}/player/${encodeURIComponent(playerId)}/answer`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ card_id: currentCard.id, answer }),
+        });
+      } catch {}
     }
 
     setTimeout(() => {
+      setAnswers(prev => ({ ...prev, [currentCard?.id ?? '']: answer }));
       setCurrentIndex(i => i + 1);
-      setExitDirection(null);
       setDragX(0);
       setDragY(0);
+      setExitDirection(null);
       setIsAnimatingOut(false);
-      setJustMounted(true);
-      setTimeout(() => setJustMounted(false), 50);
     }, 350);
   };
 
   const bind = useDrag(({ movement: [mx, my], last, velocity: [vx] }) => {
-    if (isAnimatingOut) return;
-    if (!last) {
-      setDragX(mx);
-      setDragY(my * 0.15);
-      setIsDragging(true);
-    } else {
-      setIsDragging(false);
-      const shouldSwipe = Math.abs(mx) > SWIPE_THRESHOLD || Math.abs(vx) > 0.6;
+  if (oneByOne && currentIndex > facilitatorCardIndex) return;
+    setDragX(mx);
+    setDragY(my * 0.2);
+    setIsDragging(!last);
+    if (last) {
+      const shouldSwipe = Math.abs(mx) > SWIPE_THRESHOLD || Math.abs(vx) > 0.5;
       if (shouldSwipe) {
         handleSwipe(mx > 0 ? 'right' : 'left');
       } else {
@@ -196,250 +141,216 @@ export default function PlayerWaiting() {
         setDragY(0);
       }
     }
-  }, { axis: undefined });
+  });
 
-  const rotation = dragX * 0.07;
+  const rotation = isAnimatingOut ? 0 : dragX * 0.08;
+  const opacity = isAnimatingOut ? 0 : 1;
+  const exitX = exitDirection === 'right' ? 600 : exitDirection === 'left' ? -600 : dragX;
   const swipeProgress = Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1);
-  const isRight = dragX > 15;
-  const isLeft = dragX < -15;
+  const isYeah = dragX > 30;
+  const isNope = dragX < -30;
 
-  const currentShape = SHAPES[shapeIndex];
-  const currentColor = COLORS[colorIndex];
+  const shape = SHAPES[shapeIndex];
+  const color = COLORS[colorIndex];
 
-  // ── GROUP REVEAL SCREEN ──
-  if (myGroup !== null) {
-    return (
-      <div style={{
-        minHeight: '100svh',
-        background: myGroup.color,
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        userSelect: 'none',
-      }}>
-        <p style={{
-          margin: '0 0 0.5rem',
-          fontSize: '1.1rem', fontWeight: 700,
-          color: 'rgba(255,255,255,0.6)',
-          textTransform: 'uppercase', letterSpacing: '0.15em',
-          fontFamily: 'Georgia, serif',
-        }}>
-          You're in
-        </p>
-        <p style={{
-          margin: 0,
-          fontSize: 'clamp(8rem, 35vw, 14rem)',
-          fontWeight: 900,
-          color: 'white',
-          lineHeight: 1,
-          textShadow: '0 8px 48px rgba(0,0,0,0.2)',
-          fontFamily: 'Georgia, serif',
-        }}>
-          {myGroup.index + 1}
-        </p>
+  const renderShape = () => {
+    const size = shapeSize;
+    const style: React.CSSProperties = {
+      width: size, height: size,
+      background: color,
+      cursor: 'pointer',
+      transition: isAnimating ? 'all 0.2s ease' : 'none',
+      userSelect: 'none',
+    };
+    if (shape === 'circle') return <div style={{ ...style, borderRadius: '50%' }} onClick={handleTap} />;
+    if (shape === 'square') return <div style={{ ...style, borderRadius: 24 }} onClick={handleTap} />;
+    if (shape === 'blob') return <div style={{ ...style, borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%' }} onClick={handleTap} />;
+    if (shape === 'triangle') return (
+      <div onClick={handleTap} style={{ cursor: 'pointer' }}>
+        <svg width={size} height={size} viewBox="0 0 100 100">
+          <polygon points="50,10 90,90 10,90" fill={color} />
+        </svg>
       </div>
     );
-  }
+    if (shape === 'star') return (
+      <div onClick={handleTap} style={{ cursor: 'pointer' }}>
+        <svg width={size} height={size} viewBox="0 0 100 100">
+          <polygon points="50,5 61,35 95,35 68,57 79,91 50,70 21,91 32,57 5,35 39,35" fill={color} />
+        </svg>
+      </div>
+    );
+  };
 
-  // ── WAITING SCREEN ──
+  // ── Waiting screen ─────────────────────────────────────────────
   if (!gameStarted) {
     return (
-      <div
-        onClick={handleTap}
-        style={{
-          minHeight: '100svh',
-          fontFamily: "inherit",
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          position: 'relative', overflow: 'hidden',
-          background: 'white',
-          cursor: 'pointer',
-          userSelect: 'none',
-        }}
-      >
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: `radial-gradient(circle at 50% 50%, ${currentColor}44 0%, transparent 70%)`,
-          transition: 'background 0.5s ease',
-          pointerEvents: 'none',
-        }} />
-
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '1.5rem', textAlign: 'center', zIndex: 2 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 8 }}>
-            <img src={redImg} alt="" style={{ width: 16, height: 16, transform: 'rotate(-8deg)', opacity: 0.8 }} />
-            <img src={yellowImg} alt="" style={{ width: 16, height: 16, opacity: 0.8 }} />
-            <img src={greenImg} alt="" style={{ width: 16, height: 16, transform: 'rotate(8deg)', opacity: 0.8 }} />
+      <div style={{ minHeight: '100vh', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', position: 'relative', overflow: 'hidden' }}>
+        <AppBackground />
+        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+            <img src={redImg} alt="" style={{ width: 28, height: 28, transform: 'rotate(-10deg)' }} />
+            <img src={yellowImg} alt="" style={{ width: 28, height: 28 }} />
+            <img src={greenImg} alt="" style={{ width: 28, height: 28, transform: 'rotate(10deg)' }} />
           </div>
-          <p style={{ margin: 0, fontSize: '0.75rem', color: 'rgba(0,0,0,0.3)', fontFamily: 'monospace' }}>
-            {gameCode}
-          </p>
-        </div>
-
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 240, height: 240, position: 'relative', zIndex: 2,
-          transform: isAnimating ? 'scale(0.7)' : 'scale(1)',
-          transition: 'transform 0.2s ease',
-        }}>
-          <ShapeDisplay shape={currentShape} color={currentColor} size={shapeSize} />
-        </div>
-
-        <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', marginTop: '3rem' }}>
-          <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(0,0,0,0.35)' }}>
-            Game starts when the facilitator is ready
-          </p>
-          {tapCount > 0 && (
-            <p style={{ margin: '0.5rem 0 0', fontSize: '0.72rem', color: currentColor, fontWeight: 700, transition: 'color 0.3s' }}>
-              {tapCount} {tapCount === 1 ? 'tap' : 'taps'} ✦
+          <div style={{ transition: 'transform 0.2s ease', transform: isAnimating ? 'scale(0.7)' : 'scale(1)' }}>
+            {renderShape()}
+          </div>
+          <div>
+            <p style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: '#1c1917', letterSpacing: '-0.5px' }}>
+              Getting ready...
             </p>
-          )}
+            <p style={{ margin: '8px 0 0', fontSize: '0.9rem', color: '#9ca3af', fontWeight: 500 }}>
+              The facilitator will start the game shortly
+            </p>
+            {tapCount > 0 && (
+              <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: color, fontWeight: 700 }}>
+                {tapCount} {tapCount === 1 ? 'tap' : 'taps'} ✨
+              </p>
+            )}
+          </div>
+          <p style={{ margin: 0, fontSize: '0.75rem', color: '#d1d5db', fontWeight: 500 }}>
+            tap the shape while you wait
+          </p>
         </div>
       </div>
     );
   }
 
-  // ── SWIPING SCREEN ──
+  // ── One by one waiting screen ──────────────────────────────────
+  if (oneByOne && currentIndex > facilitatorCardIndex) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', position: 'relative' }}>
+        <AppBackground />
+        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '2rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
+          <p style={{ fontWeight: 900, color: '#1c1917', fontSize: '1.4rem', margin: '0 0 8px', letterSpacing: '-0.5px' }}>
+            Waiting for the next card...
+          </p>
+          <p style={{ color: '#9ca3af', fontSize: '0.88rem', margin: 0 }}>
+            The facilitator will reveal the next card shortly
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Done screen ────────────────────────────────────────────────
+  if (done) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', position: 'relative' }}>
+        <AppBackground />
+        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: '2rem' }}>
+            <img src={redImg} alt="" style={{ width: 36, height: 36, transform: 'rotate(-10deg)' }} />
+            <img src={yellowImg} alt="" style={{ width: 36, height: 36 }} />
+            <img src={greenImg} alt="" style={{ width: 36, height: 36, transform: 'rotate(10deg)' }} />
+          </div>
+          <p style={{ fontWeight: 900, color: '#1c1917', fontSize: '1.8rem', margin: '0 0 8px', letterSpacing: '-0.5px' }}>
+            All done!
+          </p>
+          <p style={{ color: '#9ca3af', fontSize: '0.95rem', margin: 0, lineHeight: 1.6 }}>
+            Your answers have been submitted.<br />Wait for the facilitator to continue.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Swipe screen ───────────────────────────────────────────────
   return (
-    <div style={{
-      minHeight: '100svh', background: 'white',
-      fontFamily: "inherit",
-      display: 'flex', flexDirection: 'column',
-      position: 'relative', overflow: 'hidden',
-    }}>
+    <div style={{ minHeight: '100vh', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', position: 'relative', overflow: 'hidden', userSelect: 'none' }}>
       <AppBackground />
 
-      <div style={{ position: 'relative', zIndex: 1, padding: '1.25rem 1.5rem 0', textAlign: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 6 }}>
-          <img src={redImg} alt="" style={{ width: 18, height: 18, transform: 'rotate(-8deg)' }} />
-          <img src={yellowImg} alt="" style={{ width: 18, height: 18 }} />
-          <img src={greenImg} alt="" style={{ width: 18, height: 18, transform: 'rotate(8deg)' }} />
+      <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 420, padding: '0 1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+
+        {/* Progress */}
+        <div style={{ width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af' }}>{currentIndex + 1} / {cards.length}</span>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af' }}>{Math.round(((currentIndex) / cards.length) * 100)}%</span>
+          </div>
+          <div style={{ height: 5, background: '#f3f4f6', borderRadius: 99, overflow: 'hidden' }}>
+            <div style={{ height: '100%', borderRadius: 99, background: 'linear-gradient(90deg, #15803d, #4ade80)', width: `${(currentIndex / cards.length) * 100}%`, transition: 'width 0.4s ease' }} />
+          </div>
         </div>
-        <h1 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: '#1c1917', letterSpacing: '-0.5px' }}>
-          Common Ground
-        </h1>
-        <p style={{ margin: '3px 0 0', fontSize: '0.75rem', color: '#9ca3af' }}>
-          Code: <span style={{ fontWeight: 700, color: '#15803d', fontFamily: 'monospace' }}>{gameCode}</span>
+
+        {/* Cards stack */}
+        <div style={{ position: 'relative', width: '100%', height: 340 }}>
+          {/* Background cards */}
+          {[2, 1].map(offset => {
+            const idx = currentIndex + offset;
+            if (idx >= cards.length) return null;
+            return (
+              <div key={idx} style={{ position: 'absolute', inset: 0, background: 'white', border: '2px solid #e5e7eb', borderRadius: 24, transform: `scale(${1 - offset * 0.04}) translateY(${offset * 10}px)`, zIndex: 10 - offset, boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }} />
+            );
+          })}
+
+          {/* Active card */}
+          <div
+            {...bind()}
+            style={{
+              position: 'absolute', inset: 0,
+              background: isYeah
+                ? `rgba(240,253,244,${0.5 + swipeProgress * 0.5})`
+                : isNope
+                  ? `rgba(255,245,245,${0.5 + swipeProgress * 0.5})`
+                  : 'white',
+              border: `2px solid ${isYeah ? '#bbf7d0' : isNope ? '#fca5a5' : '#e5e7eb'}`,
+              borderRadius: 24,
+              zIndex: 20,
+              cursor: 'grab',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '2rem',
+              textAlign: 'center',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.1)',
+              transform: `translate(${exitX}px, ${dragY}px) rotate(${rotation}deg)`,
+              transition: isAnimatingOut ? 'transform 0.35s ease, opacity 0.35s ease' : isDragging ? 'none' : 'transform 0.3s ease',
+              opacity,
+              touchAction: 'none',
+            }}
+          >
+            {/* Yeah indicator */}
+            {isYeah && (
+              <div style={{ position: 'absolute', top: 20, left: 20, padding: '6px 14px', borderRadius: 20, background: '#15803d', color: 'white', fontWeight: 900, fontSize: '0.85rem', opacity: swipeProgress, transform: `rotate(-15deg)`, letterSpacing: '0.05em' }}>
+                YEAH ✓
+              </div>
+            )}
+            {/* Nope indicator */}
+            {isNope && (
+              <div style={{ position: 'absolute', top: 20, right: 20, padding: '6px 14px', borderRadius: 20, background: '#dc2626', color: 'white', fontWeight: 900, fontSize: '0.85rem', opacity: swipeProgress, transform: `rotate(15deg)`, letterSpacing: '0.05em' }}>
+                NOPE ✗
+              </div>
+            )}
+            <p style={{ fontSize: 'clamp(1.2rem, 5vw, 1.6rem)', fontWeight: 800, color: '#1c1917', margin: 0, lineHeight: 1.3, letterSpacing: '-0.3px' }}>
+              {currentCard?.text}
+            </p>
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div style={{ display: 'flex', gap: '1.5rem', width: '100%', justifyContent: 'center' }}>
+          <button
+            onClick={() => handleSwipe('left')}
+            style={{ width: 64, height: 64, borderRadius: '50%', border: '2px solid #fca5a5', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.6rem', boxShadow: '0 4px 16px rgba(239,68,68,0.15)', transition: 'transform 0.15s, box-shadow 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.background = '#fff5f5'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = 'white'; }}
+          >
+            ✗
+          </button>
+          <button
+            onClick={() => handleSwipe('right')}
+            style={{ width: 64, height: 64, borderRadius: '50%', border: '2px solid #bbf7d0', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.6rem', boxShadow: '0 4px 16px rgba(21,128,61,0.15)', transition: 'transform 0.15s, box-shadow 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.background = '#f0fdf4'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = 'white'; }}
+          >
+            ✓
+          </button>
+        </div>
+
+        <p style={{ margin: 0, fontSize: '0.72rem', color: '#d1d5db', fontWeight: 500 }}>
+          swipe or tap to answer
         </p>
       </div>
-
-      {!done ? (
-        <>
-          <div style={{ position: 'relative', zIndex: 1, padding: '0.75rem 1.5rem 0' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, fontSize: '0.72rem', color: '#9ca3af' }}>
-              <span>Which ones apply to you?</span>
-              <span>{currentIndex + 1} / {cards.length}</span>
-            </div>
-            <div style={{ height: 4, background: '#f3f4f6', borderRadius: 99, overflow: 'hidden' }}>
-              <div style={{
-                height: '100%', borderRadius: 99,
-                background: 'linear-gradient(90deg, #278967, #4ade80)',
-                width: `${(currentIndex / cards.length) * 100}%`,
-                transition: 'width 0.3s',
-              }} />
-            </div>
-          </div>
-
-          <div style={{
-            position: 'relative', zIndex: 1,
-            display: 'flex', justifyContent: 'space-between',
-            padding: '0.5rem 2rem 0',
-            maxWidth: 360, margin: '0 auto', width: '100%',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: isLeft ? '#ef4444' : '#1c1917', fontSize: '0.82rem', fontWeight: 700, transition: 'color 0.15s', opacity: isLeft ? 0.6 + swipeProgress * 0.4 : 0.5 }}>
-              <span style={{ fontSize: '1.1rem' }}>←</span> Nope
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: isRight ? '#22c55e' : '#1c1917', fontSize: '0.82rem', fontWeight: 700, transition: 'color 0.15s', opacity: isRight ? 0.6 + swipeProgress * 0.4 : 0.5 }}>
-              Yeah <span style={{ fontSize: '1.1rem' }}>→</span>
-            </div>
-          </div>
-
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, padding: '0.5rem 1.5rem' }}>
-            <div style={{ position: 'relative', width: '100%', maxWidth: 340, height: 400 }}>
-              {[2, 1].map((offset) => {
-                const cardIndex = currentIndex + offset;
-                if (cardIndex >= cards.length) return null;
-                return (
-                  <div key={cards[cardIndex].id} style={{
-                    position: 'absolute', inset: 0,
-                    background: offset === 2 ? '#f3f4f6' : 'linear-gradient(145deg, #f9fafb 0%, #f0fdf4 100%)',
-                    border: '1.5px solid rgba(0,0,0,0.06)', borderRadius: 24,
-                    transform: `translateY(${offset * 12}px) scale(${1 - offset * 0.05})`,
-                    boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-                    zIndex: offset === 1 ? 1 : 0,
-                  }} />
-                );
-              })}
-
-              {currentCard && (
-                <div
-                  {...bind()}
-                  style={{
-                    position: 'absolute', inset: 0,
-                    background: 'linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%)',
-                    border: '1.5px solid rgba(34,197,94,0.15)',
-                    borderRadius: 24, zIndex: 2,
-                    boxShadow: isDragging ? '0 24px 60px rgba(0,0,0,0.16)' : '0 8px 32px rgba(0,0,0,0.09)',
-                    transform: exitDirection
-                      ? `translateX(${exitDirection === 'right' ? 700 : -700}px) rotate(${exitDirection === 'right' ? 22 : -22}deg)`
-                      : `translateX(${dragX}px) translateY(${dragY}px) rotate(${rotation}deg)`,
-                    transition: exitDirection ? 'transform 0.35s ease-in' : justMounted ? 'none' : isDragging ? 'box-shadow 0.15s' : 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.15s',
-                    cursor: isDragging ? 'grabbing' : 'grab',
-                    userSelect: 'none', touchAction: 'none',
-                    display: 'flex', flexDirection: 'column', padding: '2rem', overflow: 'hidden',
-                  }}
-                >
-                  <div style={{ position: 'absolute', top: 22, left: 20, opacity: isLeft ? swipeProgress : 0, transition: isDragging ? 'none' : 'opacity 0.15s', transform: 'rotate(-18deg)', pointerEvents: 'none' }}>
-                    <div style={{ border: '3px solid #ef4444', borderRadius: 8, padding: '3px 10px', color: '#ef4444', fontSize: '1.3rem', fontWeight: 900, letterSpacing: '0.08em' }}>NOPE</div>
-                  </div>
-                  <div style={{ position: 'absolute', top: 22, right: 20, opacity: isRight ? swipeProgress : 0, transition: isDragging ? 'none' : 'opacity 0.15s', transform: 'rotate(18deg)', pointerEvents: 'none' }}>
-                    <div style={{ border: '3px solid #22c55e', borderRadius: 8, padding: '3px 10px', color: '#22c55e', fontSize: '1.3rem', fontWeight: 900, letterSpacing: '0.08em' }}>YEAH</div>
-                  </div>
-                  <div style={{ position: 'absolute', inset: 0, borderRadius: 24, pointerEvents: 'none', background: isLeft ? `rgba(239,68,68,${swipeProgress * 0.12})` : isRight ? `rgba(34,197,94,${swipeProgress * 0.12})` : 'transparent', transition: isDragging ? 'none' : 'background 0.15s' }} />
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <p style={{ fontSize: '1.45rem', fontWeight: 900, color: '#1c1917', textAlign: 'center', lineHeight: 1.3, letterSpacing: '-0.3px', margin: 0 }}>
-                      {currentCard.text}
-                    </p>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: '1rem' }}>
-                    <button onPointerDown={e => e.stopPropagation()} onClick={() => handleSwipe('left')} style={{ width: 48, height: 48, borderRadius: '50%', border: '2px solid #fca5a5', background: '#fff5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.3rem', color: '#ef4444', transition: 'transform 0.15s', boxShadow: '0 2px 8px rgba(239,68,68,0.15)' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.12)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>✗</button>
-                    <button onPointerDown={e => e.stopPropagation()} onClick={() => handleSwipe('right')} style={{ width: 48, height: 48, borderRadius: '50%', border: '2px solid #86efac', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '1.3rem', color: '#22c55e', transition: 'transform 0.15s', boxShadow: '0 2px 8px rgba(34,197,94,0.15)' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.12)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>✓</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      ) : (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1, padding: '2rem', textAlign: 'center' }}>
-          <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #278967, #4ade80)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', marginBottom: '1.25rem', boxShadow: '0 8px 32px rgba(22,101,52,0.3)' }}>✓</div>
-          <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.7rem', fontWeight: 900, color: '#1c1917', letterSpacing: '-0.5px' }}>All done!</h2>
-          <p style={{ color: '#78716c', fontSize: '0.95rem', margin: '0 0 2rem', lineHeight: 1.6 }}>Your answers have been recorded.</p>
-          <div style={{ background: 'rgba(255,255,255,0.85)', border: '1.5px solid rgba(0,0,0,0.07)', borderRadius: 16, padding: '1.25rem', width: '100%', maxWidth: 280, marginBottom: '1.5rem' }}>
-            <p style={{ margin: '0 0 0.75rem', fontWeight: 700, fontSize: '0.82rem', color: '#374151' }}>Your answers</p>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-              <div style={{ textAlign: 'center' }}>
-                <p style={{ margin: 0, fontSize: '2rem', fontWeight: 900, color: '#22c55e' }}>{Object.values(answers).filter(Boolean).length}</p>
-                <p style={{ margin: 0, fontSize: '0.72rem', color: '#9ca3af' }}>Yeah</p>
-              </div>
-              <div style={{ width: 1, background: '#f3f4f6' }} />
-              <div style={{ textAlign: 'center' }}>
-                <p style={{ margin: 0, fontSize: '2rem', fontWeight: 900, color: '#ef4444' }}>{Object.values(answers).filter(v => !v).length}</p>
-                <p style={{ margin: 0, fontSize: '0.72rem', color: '#9ca3af' }}>Nope</p>
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#9ca3af', fontSize: '0.82rem' }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80', animation: 'pulse 1.5s infinite' }} />
-            Waiting for the facilitator...
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(0.8); }
-        }
-      `}</style>
     </div>
   );
 }

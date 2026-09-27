@@ -20,14 +20,26 @@ interface Props {
 }
 
 const GROUP_COLORS = [
-  { name: 'Violet', bg: '#f5f3ff', border: '#ddd6fe', dot: '#8b5cf6', text: '#6d28d9' },
-  { name: 'Sky',    bg: '#eff6ff', border: '#bfdbfe', dot: '#3b82f6', text: '#1d4ed8' },
-  { name: 'Coral',  bg: '#fff1f1', border: '#fca5a5', dot: '#ef4444', text: '#991b1b' },
-  { name: 'Mint',   bg: '#f0fdf4', border: '#bbf7d0', dot: '#22c55e', text: '#15803d' },
-  { name: 'Amber',  bg: '#fffbeb', border: '#fde68a', dot: '#f59e0b', text: '#b45309' },
-  { name: 'Pink',   bg: '#fdf2f8', border: '#f9a8d4', dot: '#ec4899', text: '#be185d' },
-  { name: 'Teal',   bg: '#f0fdfa', border: '#99f6e4', dot: '#14b8a6', text: '#0f766e' },
-  { name: 'Orange', bg: '#fff7ed', border: '#fed7aa', dot: '#f97316', text: '#c2410c' },
+  { name: 'Violet',  bg: '#f5f3ff', border: '#ddd6fe', dot: '#8b5cf6', text: '#6d28d9' },
+  { name: 'Sky',     bg: '#eff6ff', border: '#bfdbfe', dot: '#3b82f6', text: '#1d4ed8' },
+  { name: 'Coral',   bg: '#fff1f1', border: '#fca5a5', dot: '#ef4444', text: '#991b1b' },
+  { name: 'Mint',    bg: '#f0fdf4', border: '#bbf7d0', dot: '#22c55e', text: '#15803d' },
+  { name: 'Amber',   bg: '#fffbeb', border: '#fde68a', dot: '#f59e0b', text: '#b45309' },
+  { name: 'Pink',    bg: '#fdf2f8', border: '#f9a8d4', dot: '#ec4899', text: '#be185d' },
+  { name: 'Teal',    bg: '#f0fdfa', border: '#99f6e4', dot: '#14b8a6', text: '#0f766e' },
+  { name: 'Orange',  bg: '#fff7ed', border: '#fed7aa', dot: '#f97316', text: '#c2410c' },
+  { name: 'Indigo',  bg: '#eef2ff', border: '#c7d2fe', dot: '#6366f1', text: '#4338ca' },
+  { name: 'Rose',    bg: '#fff1f2', border: '#fecdd3', dot: '#f43f5e', text: '#be123c' },
+  { name: 'Cyan',    bg: '#ecfeff', border: '#a5f3fc', dot: '#06b6d4', text: '#0e7490' },
+  { name: 'Lime',    bg: '#f7fee7', border: '#d9f99d', dot: '#84cc16', text: '#4d7c0f' },
+  { name: 'Fuchsia', bg: '#fdf4ff', border: '#f0abfc', dot: '#d946ef', text: '#a21caf' },
+  { name: 'Emerald', bg: '#ecfdf5', border: '#a7f3d0', dot: '#10b981', text: '#065f46' },
+  { name: 'Yellow',  bg: '#fefce8', border: '#fef08a', dot: '#eab308', text: '#854d0e' },
+  { name: 'Red',     bg: '#fef2f2', border: '#fecaca', dot: '#dc2626', text: '#7f1d1d' },
+  { name: 'Blue',    bg: '#eff6ff', border: '#93c5fd', dot: '#2563eb', text: '#1e3a8a' },
+  { name: 'Purple',  bg: '#faf5ff', border: '#e9d5ff', dot: '#9333ea', text: '#581c87' },
+  { name: 'Stone',   bg: '#fafaf9', border: '#d6d3d1', dot: '#78716c', text: '#292524' },
+  { name: 'Green',   bg: '#f0fdf4', border: '#86efac', dot: '#16a34a', text: '#14532d' },
 ];
 
 export const GROUP_BG_COLORS = [

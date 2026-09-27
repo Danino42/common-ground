@@ -13,8 +13,8 @@ import PlayerWaiting from './pages/player/PlayerWaiting'
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/facilitator/login" replace />} />
-      <Route path="/facilitator/login" element={<FacilitatorLogin />} />
+      <Route path="/" element={<Navigate to="/facilitator/dashboard" replace />} />
+      <Route path="/facilitator/login" element={<Navigate to="/facilitator/dashboard" replace />} />
       <Route path="/facilitator/dashboard" element={<FacilitatorDashboard />} />
       <Route path="/facilitator/game/:lobbyCode" element={<FacilitatorGame />} />
       <Route path="/facilitator/profile" element={<FacilitatorProfile />} />
