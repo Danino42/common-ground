@@ -132,6 +132,7 @@ export default function FacilitatorGame() {
             playerAnswers={playerAnswers}
             gameCode={lobbyCode!}
             oneByOne={!!gameData?.one_by_one}
+            unlockedIndex={gameData?.current_card_index ?? 0}
           />
         )}
         {mode === 'circle' && (
