@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, Users } from 'lucide-react';
 import { card, outlineBtn, primaryBtn } from './gameStyles';
 import GroupingView from './GroupingView';
@@ -21,14 +21,16 @@ interface Props {
   playerAnswers: Record<string, Record<string, boolean>>;
   gameCode: string;
   oneByOne?: boolean;
+  unlockedIndex?: number;
 }
 
 export default function SwipeResultsView({
   results, cards, currentResultIndex, setCurrentResultIndex,
   resultsBlurred, setResultsBlurred, players, playerAnswers,
-  gameCode, oneByOne
+  gameCode, oneByOne, unlockedIndex = 0
 }: Props) {
   const [phase, setPhase] = useState<'results' | 'grouping'>('results');
+  const highestUnlocked = useRef(0);
 
   const resultCard = cards[currentResultIndex];
   const cardResults = resultCard ? (results[resultCard.id] || { yes: 0, no: 0 }) : { yes: 0, no: 0 };
@@ -176,8 +178,11 @@ export default function SwipeResultsView({
         </button>
         <button
           onClick={() => {
-            setCurrentResultIndex(i => Math.min(totalCards - 1, i + 1));
-            if (oneByOne) {
+            const nextIndex = Math.min(totalCards - 1, currentResultIndex + 1);
+            setCurrentResultIndex(nextIndex);
+            highestUnlocked.current = Math.max(highestUnlocked.current, unlockedIndex);
+            if (oneByOne && nextIndex > highestUnlocked.current) {
+              highestUnlocked.current = nextIndex;
               fetch(`${API_URL}/games/${gameCode}/advance-card`, { method: 'PATCH' }).catch(() => {});
             }
           }}
