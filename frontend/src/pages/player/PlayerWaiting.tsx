@@ -101,7 +101,7 @@ export default function PlayerWaiting() {
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (isAnimatingOut) return;
-    if (oneByOne && currentIndex >= facilitatorCardIndex) return;
+    if (oneByOne && currentIndex > facilitatorCardIndex) return;
 
     setIsAnimatingOut(true);
     setExitDirection(direction);
@@ -109,10 +109,10 @@ export default function PlayerWaiting() {
 
     if (currentCard && playerId && gameCode) {
       try {
-        await fetch(`${API_URL}/games/${gameCode}/player/${encodeURIComponent(playerId)}/answer`, {
+        await fetch(`${API_URL}/games/answer`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ card_id: currentCard.id, answer }),
+          body: JSON.stringify({ lobby_code: gameCode, player_id: playerId, card_id: currentCard.id, answer }),
         });
       } catch {}
     }
@@ -217,7 +217,7 @@ export default function PlayerWaiting() {
   }
 
   // ── One by one waiting screen ──────────────────────────────────
-  if (oneByOne && currentIndex > facilitatorCardIndex) {
+  if (oneByOne && !done && currentIndex > facilitatorCardIndex) {
     return (
       <div style={{ minHeight: '100vh', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit', position: 'relative' }}>
         <AppBackground />

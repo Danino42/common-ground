@@ -36,9 +36,6 @@ export default function FacilitatorGame() {
   const [gameData, setGameData] = useState<any>(null);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
-  // one_by_one: current facilitator card index
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
-
   useEffect(() => {
     document.body.style.minHeight = '100svh';
     const root = document.getElementById('root');
@@ -70,20 +67,12 @@ export default function FacilitatorGame() {
         setPlayers(data.players || []);
         setPlayerAnswers(data.answers || {});
         setGameData(data);
-        setCurrentCardIndex(data.current_card_index ?? 0);
       } catch {}
     };
     fetchResults();
     const interval = setInterval(fetchResults, 1000);
     return () => clearInterval(interval);
   }, [lobbyCode]);
-
-  const handleAdvanceCard = async () => {
-    try {
-      await fetch(`${API_URL}/games/${lobbyCode}/advance-card`, { method: 'PATCH' });
-      setCurrentCardIndex(i => i + 1);
-    } catch {}
-  };
 
   const color = modeColor[mode] || '#15803d';
   const label = modeLabel[mode] || 'Game';
@@ -118,28 +107,6 @@ export default function FacilitatorGame() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {/* One by one: Next Card button */}
-            {gameData?.one_by_one && (
-              <button
-                onClick={handleAdvanceCard}
-                disabled={currentCardIndex >= (cards.length - 1)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '7px 14px', borderRadius: 10, border: 'none',
-                  background: currentCardIndex >= (cards.length - 1) ? '#e5e7eb' : color,
-                  color: 'white',
-                  fontSize: '0.78rem', fontWeight: 700,
-                  cursor: currentCardIndex >= (cards.length - 1) ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.15s',
-                }}
-              >
-                Next Card →
-                <span style={{ background: 'rgba(255,255,255,0.25)', borderRadius: 10, padding: '1px 6px', fontSize: '0.68rem' }}>
-                  {currentCardIndex + 1}/{cards.length}
-                </span>
-              </button>
-            )}
-
             <SessionBadge />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: 20, padding: '4px 12px' }}>
@@ -164,6 +131,7 @@ export default function FacilitatorGame() {
             players={players}
             playerAnswers={playerAnswers}
             gameCode={lobbyCode!}
+            oneByOne={!!gameData?.one_by_one}
           />
         )}
         {mode === 'circle' && (

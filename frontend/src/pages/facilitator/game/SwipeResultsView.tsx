@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, Users } from 'lucide-react';
 import { card, outlineBtn, primaryBtn } from './gameStyles';
 import GroupingView from './GroupingView';
+import { API_URL } from '../../../utils/api';
 
 interface Player {
   player_id: string;
@@ -19,12 +20,13 @@ interface Props {
   players: Player[];
   playerAnswers: Record<string, Record<string, boolean>>;
   gameCode: string;
+  oneByOne?: boolean;
 }
 
 export default function SwipeResultsView({
   results, cards, currentResultIndex, setCurrentResultIndex,
   resultsBlurred, setResultsBlurred, players, playerAnswers,
-  gameCode
+  gameCode, oneByOne
 }: Props) {
   const [phase, setPhase] = useState<'results' | 'grouping'>('results');
 
@@ -173,7 +175,12 @@ export default function SwipeResultsView({
           <ArrowLeft size={16} /> Previous
         </button>
         <button
-          onClick={() => setCurrentResultIndex(i => Math.min(totalCards - 1, i + 1))}
+          onClick={() => {
+            setCurrentResultIndex(i => Math.min(totalCards - 1, i + 1));
+            if (oneByOne) {
+              fetch(`${API_URL}/games/${gameCode}/advance-card`, { method: 'PATCH' }).catch(() => {});
+            }
+          }}
           disabled={isLastCard}
           style={{ ...primaryBtn, opacity: isLastCard ? 0.4 : 1 }}
         >
