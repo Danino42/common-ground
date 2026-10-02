@@ -101,7 +101,7 @@ export default function PlayerWaiting() {
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (isAnimatingOut) return;
-    if (oneByOne && currentIndex >= facilitatorCardIndex) return;
+    if (oneByOne && currentIndex > facilitatorCardIndex) return;
 
     setIsAnimatingOut(true);
     setExitDirection(direction);
