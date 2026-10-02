@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from 'react-router'
-import FacilitatorLogin from './pages/facilitator/FacilitatorLogin'
 import FacilitatorDashboard from './pages/facilitator/FacilitatorDashboard'
 import FacilitatorGame from './pages/facilitator/game/FacilitatorGame'
 import FacilitatorProfile from './pages/facilitator/FacilitatorProfile'
