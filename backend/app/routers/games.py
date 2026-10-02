@@ -99,6 +99,8 @@ async def get_results(lobby_code: str):
         "players": game.get("players", []),
         "answers": game.get("answers", {}),
         "results": results,
+        "one_by_one": game.get("one_by_one", False),
+        "current_card_index": game.get("current_card_index", 0),
     }
 
 @router.get("/{lobby_code}")
