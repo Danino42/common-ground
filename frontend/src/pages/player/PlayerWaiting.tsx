@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router';
 import { useDrag } from '@use-gesture/react';
 import AppBackground from '../AppBackground';
@@ -26,7 +26,6 @@ export default function PlayerWaiting() {
   const [gameStarted, setGameStarted] = useState(false);
   const [cards, setCards] = useState<{ id: string; text: string }[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const [dragX, setDragX] = useState(0);
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -118,7 +117,6 @@ export default function PlayerWaiting() {
     }
 
     setTimeout(() => {
-      setAnswers(prev => ({ ...prev, [currentCard?.id ?? '']: answer }));
       setCurrentIndex(i => i + 1);
       setDragX(0);
       setDragY(0);
@@ -286,7 +284,14 @@ export default function PlayerWaiting() {
           })}
 
           {/* Active card */}
+          <style>{`
+            @keyframes cardEnter {
+              from { transform: translateY(70px); opacity: 0; }
+              to { transform: translateY(0); opacity: 1; }
+            }
+          `}</style>
           <div
+            key={currentCard?.id ?? currentIndex}
             {...bind()}
             style={{
               position: 'absolute', inset: 0,
@@ -305,6 +310,7 @@ export default function PlayerWaiting() {
               boxShadow: '0 8px 40px rgba(0,0,0,0.1)',
               transform: `translate(${exitX}px, ${dragY}px) rotate(${rotation}deg)`,
               transition: isAnimatingOut ? 'transform 0.35s ease, opacity 0.35s ease' : isDragging ? 'none' : 'transform 0.3s ease',
+              animation: 'cardEnter 0.35s ease-out',
               opacity,
               touchAction: 'none',
             }}

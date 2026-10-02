@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useParams, useSearchParams, useNavigate } from 'react-router';
+import { useParams, useSearchParams, useNavigate } from 'react-router';
 import { ArrowLeft, X } from 'lucide-react';
 import AppBackground from '../../AppBackground';
 import { API_URL } from '../../../utils/api';
